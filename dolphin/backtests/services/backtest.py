@@ -266,7 +266,7 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Write to csv.
         #--------------------------------------------------------------------------
-        turtle.df.to_csv("{}/algo_turtle_indicators.csv".format(turtle.CSV_ROOT_PATH), index=False)
+        self.df.to_csv("{}/algo_turtle_indicators.csv".format(self.CSV_ROOT_PATH), index=False)
 
         return
 
