@@ -1,0 +1,11 @@
+credentials.ini                                                                                                                                                                                                    
+*.log
+__pycache__/
+*.pyc
+.vscode/*
+.swp
+graph/*
+csv/*
+log/*
+backup/*
+data/*
