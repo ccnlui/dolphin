@@ -75,10 +75,10 @@ class pandas_algo_turtle(object):
     # Constants.
     #--------------------------------------------------------------------------
     MARKET_DATA_ROOT_PATH = "/home/calvin/source/data/alpha_vantage/backup/2021-01-16/data"
-    GRAPH_ROOT_PATH       = "/home/calvin/source/python/pandas/graph"
-    LOG_ROOT_PATH         = "/home/calvin/source/python/pandas/log"
-    CSV_ROOT_PATH         = "/home/calvin/source/python/pandas/csv"
-    LISTING_ROOT_PATH     = "/home/calvin/source/data/alpha_vantage/listing"
+    LISTING_ROOT_PATH     = "/home/calvin/source/data/alpha_vantage/backup/2021-01-16/listing"
+    GRAPH_ROOT_PATH       = "/home/calvin/source/dolphin/graph"
+    LOG_ROOT_PATH         = "/home/calvin/source/dolphin/log"
+    CSV_ROOT_PATH         = "/home/calvin/source/dolphin/csv"
 
     REGULAR_TRADING_HOURS_START_TIME = time.fromisoformat("09:30:00")
     REGULAR_TRADING_HOURS_END_TIME = time.fromisoformat("16:00:00")
