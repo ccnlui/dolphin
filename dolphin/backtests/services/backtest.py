@@ -92,15 +92,15 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # Members.
         #----------------------------------------------------------------------
-        # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
+        self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
         # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
-        self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        self.symbol_universe.sort()
-        if "raw" in self.symbol_universe:
-            self.symbol_universe.remove('raw')
+        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
+        # self.symbol_universe.sort()
+        # if "raw" in self.symbol_universe:
+        #     self.symbol_universe.remove('raw')
 
         self.curr_split_factor = None
 
@@ -1479,7 +1479,7 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Write to csv.
         #--------------------------------------------------------------------------
-        df_trade_summary.to_csv("{}/algo_turtle_trade_summary.csv".format(turtle.CSV_ROOT_PATH), index=False)
+        df_trade_summary.to_csv("{}/algo_turtle_trade_summary.csv".format(self.CSV_ROOT_PATH), index=False)
 
         #--------------------------------------------------------------------------
         # Trade statistics.
@@ -1612,7 +1612,7 @@ class pandas_algo_turtle(object):
         # Create a subset dataframe if there is enough memory.
         #----------------------------------------------------------------------
         try:
-            df.loc[ df.weights > 0 ].to_csv("{}/algo_turtle_weights.csv".format(turtle.CSV_ROOT_PATH), index=False)
+            df.loc[ df.weights > 0 ].to_csv("{}/algo_turtle_weights.csv".format(pandas_algo_turtle.CSV_ROOT_PATH), index=False)
         except:
             #------------------------------------------------------------------
             # Replace NaN with empty string.
@@ -1624,7 +1624,7 @@ class pandas_algo_turtle(object):
             #------------------------------------------------------------------
             df.date = df.date.dt.strftime("%Y-%m-%d")
 
-            with open("{}/algo_turtle_weights.csv".format(turtle.CSV_ROOT_PATH), 'w', newline='') as f:
+            with open("{}/algo_turtle_weights.csv".format(pandas_algo_turtle.CSV_ROOT_PATH), 'w', newline='') as f:
 
                 # CSV writer, defaults uses "\r\n". 
                 cw = csv.writer(f, lineterminator='\n')
@@ -1655,7 +1655,7 @@ class pandas_algo_turtle(object):
         # Create a subset dataframe if there is enough memory.
         #----------------------------------------------------------------------
         try:
-            df.loc[ ~df.cashflow.isna() ].to_csv("{}/algo_turtle_cashflow.csv".format(turtle.CSV_ROOT_PATH), index=False)
+            df.loc[ ~df.cashflow.isna() ].to_csv("{}/algo_turtle_cashflow.csv".format(pandas_algo_turtle.CSV_ROOT_PATH), index=False)
         except:
             #------------------------------------------------------------------
             # Replace NaN with empty string.
@@ -1667,7 +1667,7 @@ class pandas_algo_turtle(object):
             #------------------------------------------------------------------
             df.date = df.date.dt.strftime("%Y-%m-%d")
 
-            with open("{}/algo_turtle_cashflow.csv".format(turtle.CSV_ROOT_PATH), 'w', newline='') as f:
+            with open("{}/algo_turtle_cashflow.csv".format(pandas_algo_turtle.CSV_ROOT_PATH), 'w', newline='') as f:
 
                 # CSV writer, defaults uses "\r\n". 
                 cw = csv.writer(f, lineterminator='\n')
