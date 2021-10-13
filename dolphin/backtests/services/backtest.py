@@ -92,11 +92,12 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # Members.
         #----------------------------------------------------------------------
-        self.symbol_universe = ["AAPL", "AMD", "NVDA"]
+        # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP"]
+        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
+
         # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
         # self.symbol_universe.sort()
         # if "raw" in self.symbol_universe:
