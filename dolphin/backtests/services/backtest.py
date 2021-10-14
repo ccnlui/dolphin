@@ -62,6 +62,9 @@ class pandas_algo_turtle(object):
     # Round ATR.
     MODEL_PRECISION = 4
 
+    PENNY_PRICE = 1
+    EXPENSIVE_PRICE = 1000
+
     #--------------------------------------------------------------------------
     # Variables.
     #--------------------------------------------------------------------------
@@ -866,6 +869,534 @@ class pandas_algo_turtle(object):
         return result
 
 
+    @staticmethod
+    def simulate_trading_new(
+        date,
+        symbol,
+        split_adjusted_open,
+        split_adjusted_close,
+        close_entry_rolling_max,
+        close_exit_rolling_min,
+        atr,
+        turtle_rank,
+        weights,
+        initial_capital,
+        start_date,
+        end_date,
+        portfolio_num_stock,
+        verbose
+    ):
+        #--------------------------------------------------------------------------
+        # Initialize columns.
+        #--------------------------------------------------------------------------
+        length = date.shape[0]
+
+        # Trade specific columns.
+        cnt_long = np.full(length, np.nan)
+        qty_long = np.full(length, np.nan)
+        stop_loss = np.full(length, np.nan)
+        last_fill = np.full(length, np.nan)
+        avg_price = np.full(length, np.nan)
+        cashflow = np.full(length, np.nan)
+        book_value = np.full(length, np.nan)
+        market_value = np.full(length, np.nan)
+        trade_pnl = np.full(length, np.nan)
+
+        # Account specific columns.
+        cash_eod = np.full(length, np.nan)
+        equity_eod = np.full(length, np.nan)
+        account_pnl_eod = np.full(length, np.nan)
+
+        cash_bod = np.full(length, np.nan)
+        equity_bod = np.full(length, np.nan)
+        account_pnl_bod = np.full(length, np.nan)
+
+        #--------------------------------------------------------------------------
+        # Initialize variables.
+        #--------------------------------------------------------------------------
+        trading = False
+        curr_date = None
+        cash = initial_capital
+        equity = cash
+        account_pnl = 0
+
+        #--------------------------------------------------------------------------
+        # Keep track of symbol variables.
+        #--------------------------------------------------------------------------
+        symbol_prev_idx = Dict.empty(key_type=types.unicode_type, value_type=types.int64)
+        symbol_curr_idx = Dict.empty(key_type=types.unicode_type, value_type=types.int64)
+
+        portfolio_symbol = []
+        curr_watchlist = []
+        prev_watchlist = []
+
+        #--------------------------------------------------------------------------
+        # Inner helper.
+        #--------------------------------------------------------------------------
+        def buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+
+            curr_idx = symbol_curr_idx[curr_symbol]
+            prev_idx = symbol_prev_idx[curr_symbol]
+
+            if cnt_long[curr_idx] > 0:
+                return False
+
+            # Not rank.
+            if turtle_rank[prev_idx] > portfolio_num_stock:
+                return False
+
+            # Entry level.
+            if curr_price >= close_entry_rolling_max[prev_idx]:
+                return True
+
+            return False
+
+        def sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+            
+            curr_idx = symbol_curr_idx[curr_symbol]
+            prev_idx = symbol_prev_idx[curr_symbol]
+
+            if cnt_long[curr_idx] == 0:
+                return False
+
+            # Exit level.
+            if curr_price <= close_exit_rolling_min[prev_idx]:
+                return True
+
+            # Stop loss.
+            if curr_price <= stop_loss[prev_idx]:
+                return True
+
+            # Penny stock.
+            if curr_price < pandas_algo_turtle.PENNY_PRICE:
+                return True
+
+            # Expensive stock.
+            if curr_price > pandas_algo_turtle.EXPENSIVE_PRICE:
+                return True
+
+            # Not rank.
+            if turtle_rank[prev_idx] > portfolio_num_stock:
+                return True
+
+            # Volatile.
+            # TODO.
+
+            return False
+
+
+        def liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, cash, equity, account_pnl):
+
+            # Don't change previous entry.
+            prev_idx = symbol_prev_idx[curr_symbol]
+
+            # Assume position liquidated at previous close.
+            liquidate_cashflow = split_adjusted_close[prev_idx] * qty_long[prev_idx]
+            liquidate_trade_pnl = liquidate_cashflow - book_value[prev_idx]
+            cash += liquidate_cashflow
+
+            portfolio_symbol.remove(curr_symbol)
+
+            print("------------------------------------------------")
+            print("[WARNING] Liquidated trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+                curr_date,
+                curr_symbol,
+                0,
+                split_adjusted_close[prev_idx],
+                liquidate_cashflow,
+                0,
+                0,
+                0,
+                cash,
+                equity,
+                account_pnl,
+                liquidate_trade_pnl
+            ))
+            print("------------------------------------------------")
+
+            return cash, equity, account_pnl
+
+
+        def mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl):
+
+            curr_idx = symbol_curr_idx[curr_symbol]
+            prev_idx = symbol_prev_idx[curr_symbol]
+
+            # Carry over existing trade columns.
+            cnt_long[curr_idx] = cnt_long[prev_idx]
+            qty_long[curr_idx] = qty_long[prev_idx]
+            stop_loss[curr_idx] = stop_loss[prev_idx]
+            last_fill[curr_idx] = last_fill[prev_idx]
+            avg_price[curr_idx] = avg_price[prev_idx]
+
+            cashflow[curr_idx] = 0
+            book_value[curr_idx] = book_value[prev_idx]
+            market_value[curr_idx] = curr_price * qty_long[curr_idx]
+            trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
+
+            equity = equity - market_value[prev_idx] + market_value[curr_idx]
+            account_pnl = equity - initial_capital
+
+            print("[DEBUG] BOD Mark-to-market: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+                curr_date,
+                curr_symbol,
+                qty_long[curr_idx],
+                curr_price,
+                cashflow[curr_idx],
+                book_value[curr_idx],
+                avg_price[curr_idx],
+                market_value[curr_idx],
+                cash,
+                equity,
+                account_pnl,
+                trade_pnl[curr_idx]
+            ))
+
+            return cash, equity, account_pnl
+
+
+        def buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod):
+
+            curr_idx = symbol_curr_idx[curr_symbol]
+            prev_idx = symbol_prev_idx[curr_symbol]
+
+            target_qty_long = np.floor(equity_bod * weights[prev_idx] / curr_price)
+
+            if target_qty_long > 0:
+
+                cashflow[curr_idx] -= curr_price * target_qty_long
+                book_value[curr_idx] += curr_price * target_qty_long
+                market_value[curr_idx] += curr_price * target_qty_long
+                trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
+
+                cnt_long[curr_idx] = 1
+                qty_long[curr_idx] += target_qty_long
+                stop_loss[curr_idx] = curr_price - 2*atr[prev_idx]
+                last_fill[curr_idx] = curr_price
+                avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
+
+                # Add to portfolio if not exist.
+                if portfolio_symbol.count(curr_symbol) == 0:
+                    portfolio_symbol.append(curr_symbol)
+
+                cash -= curr_price * target_qty_long
+
+                print("        [INFO] Enter trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+                    curr_date,
+                    curr_symbol,
+                    qty_long[curr_idx],
+                    curr_price,
+                    cashflow[curr_idx],
+                    book_value[curr_idx],
+                    avg_price[curr_idx],
+                    market_value[curr_idx],
+                    cash,
+                    equity,
+                    account_pnl,
+                    trade_pnl[curr_idx]
+                ))
+
+            else:
+                print("------------------------------------------------")
+                print("[WARNING] Buying symbol {} with target quantity 0 on {}. ({} * {} / {})".format(
+                    curr_symbol,
+                    curr_date,
+                    equity_bod,
+                    weights[prev_idx],
+                    curr_price
+                ))
+                print("------------------------------------------------")
+            
+            return cash, equity, account_pnl
+
+
+        def sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl):
+
+            curr_idx = symbol_curr_idx[curr_symbol]
+
+            cashflow[curr_idx] += curr_price * qty_long[curr_idx]
+            book_value[curr_idx] -= curr_price * qty_long[curr_idx]
+            market_value[curr_idx] = 0
+
+            # Close remaining book value as trade profit and loss.
+            trade_pnl[curr_idx] = book_value[curr_idx] * -1
+            book_value[curr_idx] = 0
+
+            cnt_long[curr_idx] = 0
+            qty_long[curr_idx] = 0
+            stop_loss[curr_idx] = 0
+            last_fill[curr_idx] = curr_price
+            avg_price[curr_idx] = 0
+
+            cash += curr_price * qty_long[curr_idx]
+
+            portfolio_symbol.remove(curr_symbol)
+
+            print("         [INFO] Exit trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+                curr_date,
+                curr_symbol,
+                qty_long[curr_idx],
+                curr_price,
+                cashflow[curr_idx],
+                book_value[curr_idx],
+                avg_price[curr_idx],
+                market_value[curr_idx],
+                cash,
+                equity,
+                account_pnl,
+                trade_pnl[curr_idx]
+            ))
+
+            return cash, equity, account_pnl
+
+
+        def rebalance(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl):
+
+            curr_idx = symbol_curr_idx[curr_symbol]
+            prev_idx = symbol_prev_idx[curr_symbol]
+
+            # Rebalance trade.
+            target_qty_long = np.floor(equity * weights[prev_idx] / curr_price)
+            delta_qty_long = target_qty_long - qty_long[curr_idx]
+
+            # Add to position.
+            if delta_qty_long > 0:
+
+                cashflow[curr_idx] -= curr_price * delta_qty_long
+                book_value[curr_idx] += curr_price * delta_qty_long
+                market_value[curr_idx] += curr_price * delta_qty_long
+                trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
+
+                # cnt_long[curr_idx]
+                qty_long[curr_idx] += delta_qty_long
+                # stop_loss[curr_idx]
+                last_fill[curr_idx] = curr_price
+                avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
+
+            if delta_qty_long < 0:
+
+                # Sell position.
+                if target_qty_long == 0:
+
+                    cashflow[curr_idx] += curr_price * qty_long[curr_idx]
+                    book_value[curr_idx] -= curr_price * qty_long[curr_idx]
+                    market_value[curr_idx] = 0
+
+                    # Close remaining book value as trade profit and loss.
+                    trade_pnl[curr_idx] = book_value[curr_idx] * -1
+                    book_value[curr_idx] = 0
+
+                    cnt_long[curr_idx] = 0
+                    qty_long[curr_idx] = 0
+                    stop_loss[curr_idx] = 0
+                    last_fill[curr_idx] = curr_price
+                    avg_price[curr_idx] = 0
+
+                    portfolio_symbol.remove(curr_symbol)
+
+                # Remove from position.
+                else:
+                    cashflow[curr_idx] -= curr_price * delta_qty_long
+                    book_value[curr_idx] += curr_price * delta_qty_long
+                    market_value[curr_idx] += curr_price * delta_qty_long
+                    trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
+
+                    # cnt_long[curr_idx]
+                    qty_long[curr_idx] += delta_qty_long
+                    # stop_loss[curr_idx]
+                    last_fill[curr_idx] = curr_price
+                    avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
+
+            cash += cashflow[curr_idx]
+
+            print("          [INFO] Rebalance: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+                curr_date,
+                curr_symbol,
+                qty_long[curr_idx],
+                curr_price,
+                cashflow[curr_idx],
+                book_value[curr_idx],
+                avg_price[curr_idx],
+                market_value[curr_idx],
+                cash,
+                equity,
+                account_pnl,
+                trade_pnl[curr_idx]
+            ))
+
+            return cash, equity, account_pnl
+
+        #--------------------------------------------------------------------------
+        # Process tick data.
+        #--------------------------------------------------------------------------
+        for idx in range(0, length):
+
+            # New date.
+            if date[idx] != curr_date:
+
+                print("[DEBUG] Processing date {}...".format(date[idx]))
+
+                #------------------------------------------------------------------
+                # Reset.
+                #------------------------------------------------------------------
+                trading = False
+                curr_date = date[idx]
+
+                # Store previous day's symbols.
+                for curr_symbol, curr_idx in symbol_curr_idx.items():
+                    symbol_prev_idx[curr_symbol] = curr_idx
+
+                prev_watchlist = curr_watchlist.copy()
+
+                symbol_curr_idx.clear()
+                curr_watchlist.clear()
+
+            #------------------------------------------------------------------
+            # Read in symbol data.
+            #------------------------------------------------------------------
+            # Convert unichr array into unicode strings.
+            symbol_str = str(symbol[idx])
+            symbol_curr_idx[symbol_str] = idx
+
+            # Watchlist.
+            if turtle_rank[idx] <= portfolio_num_stock:
+                curr_watchlist.append(symbol_str)
+
+            #------------------------------------------------------------------
+            # Trading.
+            #------------------------------------------------------------------
+            # Read in all symbols for a day before trading.
+            if (idx+1 == length or date[idx+1] > curr_date) and start_date <= curr_date and curr_date <= end_date:
+                trading = True
+
+            if trading:
+
+                #------------------------------------------------------------------
+                # Pre-market: liquidate halted/delisted symbols.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    if curr_symbol not in symbol_curr_idx:
+                        cash, equity, account_pnl = liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # Open: Mark-to-market.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                    cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+                    cash_bod = cash
+                    equity_bod = equity
+                    account_pnl_bod = account_pnl
+
+                #------------------------------------------------------------------
+                # Open: Sell.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                    if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                        cash, equity, account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # Open: Rebalance.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                    cash, equity, account_pnl = rebalance(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # Open: Buy.
+                #------------------------------------------------------------------
+                for curr_symbol in prev_watchlist:
+                    curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                    if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                        cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+
+                #------------------------------------------------------------------
+                # High: Mark-to-market.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
+                    cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # High: Sell.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
+                    if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                        cash, equity, account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # High: Buy.
+                #------------------------------------------------------------------
+                for curr_symbol in prev_watchlist:
+                    curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
+                    if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                        cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+
+                #------------------------------------------------------------------
+                # Low: Mark-to-market.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_low[symbol_curr_idx[curr_symbol]]
+                    cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # Low: Sell.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_low[symbol_curr_idx[curr_symbol]]
+                    if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                        cash, equity, account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # Low: Buy.
+                #------------------------------------------------------------------
+                for curr_symbol in prev_watchlist:
+                    curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                    if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                        cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+
+                #------------------------------------------------------------------
+                # Close: Mark-to-market.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                    cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # Close: Sell.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                    if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                        cash, equity, account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl)
+
+                #------------------------------------------------------------------
+                # Close: Buy.
+                #------------------------------------------------------------------
+                for curr_symbol in prev_watchlist:
+                    curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                    if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                        cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+
+                #------------------------------------------------------------------
+                # After-market.
+                #------------------------------------------------------------------
+
+
+
+
+
+        if verbose:
+            result = [stop_loss, last_fill, cnt_long, qty_long, cashflow, book_value, avg_price, market_value, cash, equity, account_pnl, trade_pnl, cash_bod, equity_bod, account_pnl_bod]
+        else:
+            result = [stop_loss, last_fill, cnt_long, qty_long, cashflow, book_value, avg_price, market_value, cash, equity, account_pnl, trade_pnl]
+
+        return result
+
+
+
     def generate_indicators(self, symbol):
         #--------------------------------------------------------------------------
         # Get dataframe.
@@ -1229,7 +1760,6 @@ class pandas_algo_turtle(object):
         self.generate_all_trading_data(start_date_str, end_date_str)
 
         # for symbol in self.symbol_universe:
-
         #     self.generate_trading_data(symbol, start_date_str, end_date_str)
 
         #--------------------------------------------------------------------------
