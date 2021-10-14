@@ -639,8 +639,24 @@ class pandas_algo_turtle(object):
 
             if target_qty_long > 0:
 
+                # Initialize columns.
+                cashflow[curr_idx] = 0 if np.isnan(cashflow[curr_idx]) else cashflow[curr_idx]
+                book_value[curr_idx] = 0 if np.isnan(book_value[curr_idx]) else book_value[curr_idx]
+                market_value[curr_idx] = 0 if np.isnan(market_value[curr_idx]) else market_value[curr_idx]
+                trade_pnl[curr_idx] = 0 if np.isnan(trade_pnl[curr_idx]) else trade_pnl[curr_idx]
+                cnt_long[curr_idx] = 0 if np.isnan(cnt_long[curr_idx]) else cnt_long[curr_idx]
+                qty_long[curr_idx] = 0 if np.isnan(qty_long[curr_idx]) else qty_long[curr_idx]
+                stop_loss[curr_idx] = 0 if np.isnan(stop_loss[curr_idx]) else stop_loss[curr_idx]
+                last_fill[curr_idx] = 0 if np.isnan(last_fill[curr_idx]) else last_fill[curr_idx]
+                avg_price[curr_idx] = 0 if np.isnan(avg_price[curr_idx]) else avg_price[curr_idx]
+
                 # Account.
                 cash -= curr_price * target_qty_long
+
+                # Account columns.
+                cash_eod[curr_idx] = cash
+                equity_eod[curr_idx] = equity
+                account_pnl_eod[curr_idx] = account_pnl
 
                 # Trade columns.
                 cashflow[curr_idx] -= curr_price * target_qty_long
@@ -663,7 +679,7 @@ class pandas_algo_turtle(object):
                 if portfolio_symbol.count(curr_symbol) == 0:
                     portfolio_symbol.append(curr_symbol)
 
-                print("        [INFO] Enter trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+                print("[INFO]         Enter trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                     curr_date,
                     curr_symbol,
                     qty_long[curr_idx],
