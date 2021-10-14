@@ -443,434 +443,7 @@ class pandas_algo_turtle(object):
     #--------------------------------------------------------------------------
     @staticmethod
     # @jit(nopython=True)
-    def simulate_trading(date, symbol, split_adjusted_open, split_adjusted_close, close_entry_rolling_max, close_exit_rolling_min, atr, turtle_rank, weights, initial_capital, start_date, end_date, portfolio_num_stock, verbose):
-        #--------------------------------------------------------------------------
-        # Initialize columns.
-        #--------------------------------------------------------------------------
-        length = date.shape[0]
-
-        # Trade specific columns.
-        stop_loss = np.full(length, np.nan)
-        last_fill = np.full(length, np.nan)
-        unit_cnt_long = np.zeros(length, dtype=np.uint32)
-        unit_qty_long = np.zeros(length, dtype=np.uint32)
-
-        cashflow = np.zeros(length)
-        book_value = np.zeros(length)
-        market_value = np.zeros(length)
-        avg_price = np.zeros(length)
-        trade_pnl = np.zeros(length)
-
-        # Account specific columns.
-        cash = np.zeros(length)
-        equity = np.zeros(length)
-        account_pnl = np.zeros(length)
-
-        cash_bod = np.zeros(length)
-        equity_bod = np.zeros(length)
-        account_pnl_bod = np.zeros(length)
-
-        #--------------------------------------------------------------------------
-        # Initialize variables.
-        #--------------------------------------------------------------------------
-        curr_date = None
-
-        # Running account variables.
-        daily_cash = initial_capital
-        daily_equity = daily_cash
-        daily_account_pnl = 0
-
-        daily_equity_bod = 0
-        daily_cash_bod = 0
-        daily_account_pnl_bod = 0
-
-        #--------------------------------------------------------------------------
-        # Keep track of symbol variables.
-        #--------------------------------------------------------------------------
-        symbol_prev_idx = Dict.empty(key_type=types.unicode_type, value_type=types.int64)
-        symbol_curr_idx = Dict.empty(key_type=types.unicode_type, value_type=types.int64)
-
-        symbol_entry_signal = []
-        symbol_exit_signal = []
-        portfolio_symbol = []
-        rebalance = False
-
-        #--------------------------------------------------------------------------
-        # Process tick data.
-        #--------------------------------------------------------------------------
-        for idx in range(0, length):
-
-            #------------------------------------------------------------------
-            # Show progress.
-            #------------------------------------------------------------------
-            if date[idx] != curr_date:
-                print("[DEBUG] Processing date {}...".format(date[idx]))
-
-            #------------------------------------------------------------------
-            # Reset.
-            #------------------------------------------------------------------
-            trading = False
-
-            curr_date = date[idx]
-
-            #------------------------------------------------------------------
-            # Read in symbol index.
-            #------------------------------------------------------------------
-            # Convert unichr array into unicode strings.
-            symbol_str = str(symbol[idx])
-            symbol_curr_idx[symbol_str] = idx
-
-            #------------------------------------------------------------------
-            # Trading.
-            #------------------------------------------------------------------
-            # Read in all symbols for a date before trading.
-            if idx+1 == length or date[idx+1] > curr_date:
-                trading = True
-
-            if trading:
-                #------------------------------------------------------------------
-                # First pass: Assume open position liquidated when halted or delisted.
-                #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol:
-
-                    if curr_symbol not in symbol_curr_idx:
-
-                        # Get previous symbol index.
-                        prev_idx = symbol_prev_idx[curr_symbol]
-
-                        # Assume trade liquidated at previous close.
-                        liquidated_cashflow = split_adjusted_close[prev_idx] * unit_qty_long[prev_idx]
-                        liquidated_book_value = book_value[prev_idx] - liquidated_cashflow
-
-                        # Close remaining book value as trade profit and loss.
-                        liquidated_trade_pnl = liquidated_book_value * -1
-                        liquidated_book_value = 0
-
-                        # Keep track of running account variables.
-                        daily_cash += liquidated_cashflow
-                        daily_account_pnl = daily_equity - initial_capital
-
-                        # Remove from portfolio.
-                        portfolio_symbol.remove(curr_symbol)
-
-                        # Remove from entry and exit maps.
-                        if curr_symbol in symbol_entry_signal:
-                            symbol_entry_signal.remove(curr_symbol)
-                        if curr_symbol in symbol_exit_signal:
-                            symbol_exit_signal.remove(curr_symbol)
-
-                        print("------------------------------------------------")
-                        print("[WARNING] Liquidated trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
-                                curr_date,
-                                curr_symbol,
-                                0,
-                                split_adjusted_close[prev_idx],
-                                liquidated_cashflow,
-                                liquidated_book_value,
-                                0,
-                                0,
-                                daily_cash,
-                                daily_equity,
-                                daily_account_pnl,
-                                liquidated_trade_pnl))
-                        print("------------------------------------------------")
-
-                #------------------------------------------------------------------
-                # Second pass: Mark-to-market at BOD.
-                #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol:
-
-                    # Get symbol index.
-                    curr_idx = symbol_curr_idx[curr_symbol]
-                    prev_idx = symbol_prev_idx[curr_symbol]
-
-                    # Carry over existing trade columns.
-                    stop_loss[curr_idx] = stop_loss[prev_idx]
-                    last_fill[curr_idx] = last_fill[prev_idx]
-                    unit_cnt_long[curr_idx] = unit_cnt_long[prev_idx]
-                    unit_qty_long[curr_idx] = unit_qty_long[prev_idx]
-                    
-                    book_value[curr_idx] = book_value[prev_idx]
-                    avg_price[curr_idx] = avg_price[prev_idx]
-
-                    # Mark-to-market at BOD.
-                    market_value[curr_idx] = unit_qty_long[curr_idx] * split_adjusted_open[curr_idx]
-                    trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
-                    
-                    # Keep track of running account variables.
-                    daily_equity = daily_equity - market_value[prev_idx] + market_value[curr_idx]
-                    daily_account_pnl = daily_equity - initial_capital
-
-                    print("[DEBUG] BOD Mark-to-market: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
-                            curr_date,
-                            curr_symbol,
-                            unit_qty_long[curr_idx],
-                            split_adjusted_open[curr_idx],
-                            cashflow[curr_idx],
-                            book_value[curr_idx],
-                            avg_price[curr_idx],
-                            market_value[curr_idx],
-                            daily_cash,
-                            daily_equity,
-                            daily_account_pnl,
-                            trade_pnl[curr_idx]))
-
-                #------------------------------------------------------------------
-                # Third pass: Exit trades.
-                #------------------------------------------------------------------
-                for curr_symbol in symbol_exit_signal:
-
-                    # Get symbol index.
-                    curr_idx = symbol_curr_idx[curr_symbol]
-                    prev_idx = symbol_prev_idx[curr_symbol]
-
-                    # Exit trade.
-                    stop_loss[curr_idx] = np.nan
-                    last_fill[curr_idx] = split_adjusted_open[curr_idx]
-                    unit_cnt_long[curr_idx] = 0
-                    unit_qty_long[curr_idx] = 0
-
-                    cashflow[curr_idx] = split_adjusted_open[curr_idx] * unit_qty_long[prev_idx]
-                    book_value[curr_idx] = book_value[prev_idx] - cashflow[curr_idx]
-                    avg_price[curr_idx] = 0
-                    market_value[curr_idx] = 0
-
-                    # Close remaining book value as trade profit and loss.
-                    trade_pnl[curr_idx] = book_value[curr_idx] * -1
-                    book_value[curr_idx] = 0
-
-                    # Keep track of running account variables.
-                    daily_cash += cashflow[curr_idx]
-                    daily_account_pnl = daily_equity - initial_capital
-
-                    # Remove from portfolio.
-                    portfolio_symbol.remove(curr_symbol)
-
-                    print("         [INFO] Exit trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
-                            curr_date,
-                            curr_symbol,
-                            unit_qty_long[curr_idx],
-                            split_adjusted_open[curr_idx],
-                            cashflow[curr_idx],
-                            book_value[curr_idx],
-                            avg_price[curr_idx],
-                            market_value[curr_idx],
-                            daily_cash,
-                            daily_equity,
-                            daily_account_pnl,
-                            trade_pnl[curr_idx]))
-
-                #------------------------------------------------------------------
-                # Fourth pass: Rebalance existing position.
-                #------------------------------------------------------------------
-                if rebalance:
-
-                    for curr_symbol in portfolio_symbol:
-
-                        # Get symbol index.
-                        curr_idx = symbol_curr_idx[curr_symbol]
-                        prev_idx = symbol_prev_idx[curr_symbol]
-
-                        # Rebalance trade.
-                        target_qty_long = np.floor(daily_equity * weights[prev_idx] / split_adjusted_open[curr_idx])
-                        delta_qty_long = target_qty_long - unit_qty_long[curr_idx]
-
-                        # Add to position.
-                        if delta_qty_long > 0:
-
-                            last_fill[curr_idx] = split_adjusted_open[curr_idx]
-                            unit_qty_long[curr_idx] += delta_qty_long
-
-                            cashflow[curr_idx] = split_adjusted_open[curr_idx] * delta_qty_long * -1
-                            book_value[curr_idx] -= cashflow[curr_idx]
-                            avg_price[curr_idx] = book_value[curr_idx] / unit_qty_long[curr_idx]
-                            market_value[curr_idx] -= cashflow[curr_idx]
-                        
-                        # Remove from position.
-                        if delta_qty_long < 0:
-
-                            last_fill[curr_idx] = split_adjusted_open[curr_idx]
-                            unit_qty_long[curr_idx] += delta_qty_long
-
-                            # Remove entire position.
-                            if unit_qty_long[curr_idx] == 0:
-
-                                stop_loss[curr_idx] = np.nan
-                                unit_cnt_long[curr_idx] = 0
-
-                                cashflow[curr_idx] = split_adjusted_open[curr_idx] * unit_qty_long[prev_idx]
-                                book_value[curr_idx] = book_value[prev_idx] - cashflow[curr_idx]
-                                avg_price[curr_idx] = 0
-                                market_value[curr_idx] = 0
-
-                                # Close remaining book value as trade profit and loss.
-                                trade_pnl[curr_idx] = book_value[curr_idx] * -1
-                                book_value[curr_idx] = 0
-
-                                # Remove from portfolio.
-                                portfolio_symbol.remove(curr_symbol)
-                            else:
-                                cashflow[curr_idx] = split_adjusted_open[curr_idx] * delta_qty_long * -1
-                                book_value[curr_idx] -= cashflow[curr_idx]
-                                avg_price[curr_idx] = book_value[curr_idx] / unit_qty_long[curr_idx]
-                                market_value[curr_idx] -= cashflow[curr_idx]
-
-                                # Keep track of trade profit and loss.
-                                trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
-                    
-                        # Keep track of running account variables.
-                        daily_cash += cashflow[curr_idx]
-                        daily_account_pnl = daily_equity - initial_capital
-
-                        print("          [INFO] Rebalance: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
-                                curr_date,
-                                curr_symbol,
-                                unit_qty_long[curr_idx],
-                                split_adjusted_open[curr_idx],
-                                cashflow[curr_idx],
-                                book_value[curr_idx],
-                                avg_price[curr_idx],
-                                market_value[curr_idx],
-                                daily_cash,
-                                daily_equity,
-                                daily_account_pnl,
-                                trade_pnl[curr_idx]))
-
-                daily_equity_bod = daily_equity
-                daily_cash_bod = daily_cash
-                daily_account_pnl = daily_account_pnl_bod
-
-                #------------------------------------------------------------------
-                # Fifth pass: Enter trades.
-                #------------------------------------------------------------------
-                for curr_symbol in symbol_entry_signal:
-
-                    if curr_symbol not in symbol_curr_idx:
-                        print("------------------------------------------------")
-                        print("[WARNING] Invalid entry signal for non-trading symbol {}.".format(curr_symbol))
-                        print("------------------------------------------------")
-                        continue
-
-                    # Get symbol index.
-                    curr_idx = symbol_curr_idx[curr_symbol]
-                    prev_idx = symbol_prev_idx[curr_symbol]
-
-                    target_qty_long = np.floor(daily_equity * weights[prev_idx] / split_adjusted_open[curr_idx])
-
-                    # Enter trade.
-                    if target_qty_long > 0:
-
-                        stop_loss[curr_idx] = split_adjusted_open[curr_idx] - 2*atr[prev_idx]
-                        last_fill[curr_idx] = split_adjusted_open[curr_idx]
-                        unit_cnt_long[curr_idx] = unit_cnt_long[prev_idx] + 1
-                        unit_qty_long[curr_idx] = target_qty_long
-
-                        cashflow[curr_idx] = split_adjusted_open[curr_idx] * unit_qty_long[curr_idx] * -1
-                        book_value[curr_idx] = book_value[prev_idx] - cashflow[curr_idx]
-                        avg_price[curr_idx] = book_value[curr_idx] / unit_qty_long[curr_idx]
-                        market_value[curr_idx] = book_value[curr_idx]
-
-                        # Keep track of running account variables.
-                        daily_cash += cashflow[curr_idx]
-                        daily_account_pnl = daily_equity - initial_capital
-
-                        # Add to portfolio if not exist.
-                        if portfolio_symbol.count(curr_symbol) == 0:
-                            portfolio_symbol.append(curr_symbol)
-
-                        print("        [INFO] Enter trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
-                                curr_date,
-                                curr_symbol,
-                                unit_qty_long[curr_idx],
-                                split_adjusted_open[curr_idx],
-                                cashflow[curr_idx],
-                                book_value[curr_idx],
-                                avg_price[curr_idx],
-                                market_value[curr_idx],
-                                daily_cash,
-                                daily_equity,
-                                daily_account_pnl,
-                                trade_pnl[curr_idx]))
-                    else:
-                        print("------------------------------------------------")
-                        print("[WARNING] Buying symbol {} with target quantity 0 on {}. ({} * {} / {})".format(curr_symbol, date[curr_idx], daily_equity, weights[prev_idx], split_adjusted_open[curr_idx]))
-                        print("------------------------------------------------")
-
-                #------------------------------------------------------------------
-                # Sixth pass: Mark-to-market at EOD.
-                #------------------------------------------------------------------
-                # Reset.
-                daily_equity = daily_cash
-                daily_account_pnl = 0
-
-                for curr_symbol in portfolio_symbol:
-
-                    # Get symbol index.
-                    curr_idx = symbol_curr_idx[curr_symbol]
-                    prev_idx = symbol_prev_idx[curr_symbol]
-
-                    # Mark-to-market at EOD.
-                    market_value[curr_idx] = unit_qty_long[curr_idx] * split_adjusted_close[curr_idx]
-                    trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
-                    
-                    # Keep track of running account variables.
-                    daily_equity += market_value[curr_idx]
-
-                daily_account_pnl = daily_equity - initial_capital
-
-                #------------------------------------------------------------------
-                # Seventh pass: Process all symbols read in a day.
-                #------------------------------------------------------------------
-                # Reset.
-                symbol_entry_signal.clear()
-                symbol_exit_signal.clear()
-                rebalance = False
-
-                for curr_symbol, curr_idx in symbol_curr_idx.items():
-
-                    cash_bod[curr_idx] = daily_cash_bod
-                    equity_bod[curr_idx] = daily_equity_bod
-                    account_pnl_bod[curr_idx] = daily_account_pnl_bod
-
-                    # Fill daily account columns.
-                    cash[curr_idx] = daily_cash
-                    equity[curr_idx] = daily_equity
-                    account_pnl[curr_idx] = daily_account_pnl
-
-                    # Process date range only.
-                    if start_date <= date[curr_idx] and date[curr_idx] <= end_date:
-
-                        # Entry and exit signals.
-                        if split_adjusted_close[curr_idx] >= close_entry_rolling_max[curr_idx] and unit_cnt_long[curr_idx] == 0 and turtle_rank[curr_idx] <= portfolio_num_stock:
-                            symbol_entry_signal.append(curr_symbol)
-                        elif split_adjusted_close[curr_idx] <= close_exit_rolling_min[curr_idx] and unit_cnt_long[curr_idx] > 0:
-                            symbol_exit_signal.append(curr_symbol)
-                        elif split_adjusted_close[curr_idx] < stop_loss[curr_idx] and unit_cnt_long[curr_idx] > 0:
-                            symbol_exit_signal.append(curr_symbol)
-                        elif unit_cnt_long[curr_idx] > 0 and turtle_rank[curr_idx] > portfolio_num_stock:
-                            symbol_exit_signal.append(curr_symbol)
-
-                        # Rebalance existing entry before new entry.
-                        if portfolio_symbol and curr_symbol in symbol_entry_signal:
-                            rebalance = True
-
-                    # Store symbol index.
-                    symbol_prev_idx[curr_symbol] = curr_idx
-
-                # Reset symbol index map for next day.
-                symbol_curr_idx.clear()
-
-
-        if verbose:
-            result = [stop_loss, last_fill, unit_cnt_long, unit_qty_long, cashflow, book_value, avg_price, market_value, cash, equity, account_pnl, trade_pnl, cash_bod, equity_bod, account_pnl_bod]
-        else:
-            result = [stop_loss, last_fill, unit_cnt_long, unit_qty_long, cashflow, book_value, avg_price, market_value, cash, equity, account_pnl, trade_pnl]
-
-        return result
-
-
-    @staticmethod
-    def simulate_trading_new(
+    def simulate_trading(
         date,
         symbol,
         split_adjusted_open,
@@ -883,8 +456,7 @@ class pandas_algo_turtle(object):
         initial_capital,
         start_date,
         end_date,
-        portfolio_num_stock,
-        verbose
+        portfolio_num_stock
     ):
         #--------------------------------------------------------------------------
         # Initialize columns.
@@ -906,10 +478,6 @@ class pandas_algo_turtle(object):
         cash_eod = np.full(length, np.nan)
         equity_eod = np.full(length, np.nan)
         account_pnl_eod = np.full(length, np.nan)
-
-        cash_bod = np.full(length, np.nan)
-        equity_bod = np.full(length, np.nan)
-        account_pnl_bod = np.full(length, np.nan)
 
         #--------------------------------------------------------------------------
         # Initialize variables.
@@ -1022,7 +590,7 @@ class pandas_algo_turtle(object):
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
 
-            # Carry over existing trade columns.
+            # Trade columns.
             cnt_long[curr_idx] = cnt_long[prev_idx]
             qty_long[curr_idx] = qty_long[prev_idx]
             stop_loss[curr_idx] = stop_loss[prev_idx]
@@ -1034,8 +602,14 @@ class pandas_algo_turtle(object):
             market_value[curr_idx] = curr_price * qty_long[curr_idx]
             trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
 
+            # Account.
             equity = equity - market_value[prev_idx] + market_value[curr_idx]
             account_pnl = equity - initial_capital
+
+            # Account columns.
+            cash_eod[curr_idx] = cash
+            equity_eod[curr_idx] = equity
+            account_pnl_eod[curr_idx] = account_pnl
 
             print("[DEBUG] BOD Mark-to-market: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                 curr_date,
@@ -1064,6 +638,10 @@ class pandas_algo_turtle(object):
 
             if target_qty_long > 0:
 
+                # Account.
+                cash -= curr_price * target_qty_long
+
+                # Trade columns.
                 cashflow[curr_idx] -= curr_price * target_qty_long
                 book_value[curr_idx] += curr_price * target_qty_long
                 market_value[curr_idx] += curr_price * target_qty_long
@@ -1075,11 +653,14 @@ class pandas_algo_turtle(object):
                 last_fill[curr_idx] = curr_price
                 avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
 
+                # Account columns.
+                cash_eod[curr_idx] = cash
+                equity_eod[curr_idx] = equity
+                account_pnl_eod[curr_idx] = account_pnl
+
                 # Add to portfolio if not exist.
                 if portfolio_symbol.count(curr_symbol) == 0:
                     portfolio_symbol.append(curr_symbol)
-
-                cash -= curr_price * target_qty_long
 
                 print("        [INFO] Enter trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                     curr_date,
@@ -1114,6 +695,10 @@ class pandas_algo_turtle(object):
 
             curr_idx = symbol_curr_idx[curr_symbol]
 
+            # Account.
+            cash += curr_price * qty_long[curr_idx]
+
+            # Trade columns.
             cashflow[curr_idx] += curr_price * qty_long[curr_idx]
             book_value[curr_idx] -= curr_price * qty_long[curr_idx]
             market_value[curr_idx] = 0
@@ -1128,7 +713,10 @@ class pandas_algo_turtle(object):
             last_fill[curr_idx] = curr_price
             avg_price[curr_idx] = 0
 
-            cash += curr_price * qty_long[curr_idx]
+            # Account columns.
+            cash_eod[curr_idx] = cash
+            equity_eod[curr_idx] = equity
+            account_pnl_eod[curr_idx] = account_pnl
 
             portfolio_symbol.remove(curr_symbol)
 
@@ -1162,6 +750,7 @@ class pandas_algo_turtle(object):
             # Add to position.
             if delta_qty_long > 0:
 
+                # Trade columns.
                 cashflow[curr_idx] -= curr_price * delta_qty_long
                 book_value[curr_idx] += curr_price * delta_qty_long
                 market_value[curr_idx] += curr_price * delta_qty_long
@@ -1177,9 +766,9 @@ class pandas_algo_turtle(object):
 
                 # Sell position.
                 if target_qty_long == 0:
-
-                    cashflow[curr_idx] += curr_price * qty_long[curr_idx]
-                    book_value[curr_idx] -= curr_price * qty_long[curr_idx]
+                    # Trade columns.
+                    cashflow[curr_idx] -= curr_price * delta_qty_long
+                    book_value[curr_idx] += curr_price * delta_qty_long
                     market_value[curr_idx] = 0
 
                     # Close remaining book value as trade profit and loss.
@@ -1196,6 +785,7 @@ class pandas_algo_turtle(object):
 
                 # Remove from position.
                 else:
+                    # Trade columns.
                     cashflow[curr_idx] -= curr_price * delta_qty_long
                     book_value[curr_idx] += curr_price * delta_qty_long
                     market_value[curr_idx] += curr_price * delta_qty_long
@@ -1207,7 +797,13 @@ class pandas_algo_turtle(object):
                     last_fill[curr_idx] = curr_price
                     avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
 
+            # Account.
             cash += cashflow[curr_idx]
+
+            # Account columns.
+            cash_eod[curr_idx] = cash
+            equity_eod[curr_idx] = equity
+            account_pnl_eod[curr_idx] = account_pnl
 
             print("          [INFO] Rebalance: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                 curr_date,
@@ -1284,9 +880,7 @@ class pandas_algo_turtle(object):
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
                     cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
-                    cash_bod = cash
                     equity_bod = equity
-                    account_pnl_bod = account_pnl
 
                 #------------------------------------------------------------------
                 # Open: Sell.
@@ -1384,13 +978,6 @@ class pandas_algo_turtle(object):
                 # After-market.
                 #------------------------------------------------------------------
 
-
-
-
-
-        if verbose:
-            result = [stop_loss, last_fill, cnt_long, qty_long, cashflow, book_value, avg_price, market_value, cash, equity, account_pnl, trade_pnl, cash_bod, equity_bod, account_pnl_bod]
-        else:
             result = [stop_loss, last_fill, cnt_long, qty_long, cashflow, book_value, avg_price, market_value, cash, equity, account_pnl, trade_pnl]
 
         return result
@@ -1521,84 +1108,6 @@ class pandas_algo_turtle(object):
         return df_symbol
 
 
-    def generate_trading_data(self, symbol, start_date_str, end_date_str):
-        #--------------------------------------------------------------------------
-        # Get dataframe.
-        #--------------------------------------------------------------------------
-        df = self.df
-
-        #--------------------------------------------------------------------------
-        # Generate trading data.
-        #--------------------------------------------------------------------------
-        # Convert column date to numpy array for numba.
-        date = df.loc[ df.symbol == symbol, "date" ].to_numpy()
-
-        start_date = np.datetime64(start_date_str)
-        end_date = np.datetime64(end_date_str)
-
-        # Convert symbol series to numpy array for numba.
-        split_adjusted_open = df.loc[ df.symbol == symbol, "split_adjusted_open" ].values
-        split_adjusted_close = df.loc[ df.symbol == symbol, "split_adjusted_close" ].values
-        close_entry_rolling_max = df.loc[ df.symbol == symbol, "close_entry_rolling_max" ].values
-        close_exit_rolling_min = df.loc[ df.symbol == symbol, "close_exit_rolling_min" ].values
-        atr = df.loc[ df.symbol == symbol, "atr" ].values
-        turtle_rank = df.loc[ df.symbol == symbol, "turtle_rank" ].values
-        weights = df.loc[ df.symbol == symbol, "weights" ].values
-
-        # Calculate positions, trade profit and loss.
-        result = pandas_algo_turtle.simulate_trading(date, split_adjusted_open, split_adjusted_close, close_entry_rolling_max, close_exit_rolling_min, atr, turtle_rank, weights, self.INITIAL_CAPITAL, start_date, end_date)
-
-        # Unpack result.
-        df.loc[ df.symbol == symbol, "stop_loss" ] = result[0]
-        df.loc[ df.symbol == symbol, "last_fill" ] = result[1]
-        df.loc[ df.symbol == symbol, "unit_cnt_long" ] = result[2]
-        df.loc[ df.symbol == symbol, "unit_qty_long" ] = result[3]
-        df.loc[ df.symbol == symbol, "cashflow" ] = result[4]
-        df.loc[ df.symbol == symbol, "book_value" ] = result[5]
-        df.loc[ df.symbol == symbol, "avg_price" ] = result[6]
-        df.loc[ df.symbol == symbol, "cash" ] = result[7]
-        df.loc[ df.symbol == symbol, "market_value" ] = result[8]
-        df.loc[ df.symbol == symbol, "equity" ] = result[9]
-        df.loc[ df.symbol == symbol, "account_pnl" ] = result[10]
-        df.loc[ df.symbol == symbol, "trade_pnl" ] = result[11]
-
-        #--------------------------------------------------------------------------
-        # Calculate long + short exposure data.
-        #--------------------------------------------------------------------------
-        df.loc[ df.symbol == symbol, "long_exposure" ] = np.where(df.loc[ df.symbol == symbol, "unit_cnt_long" ] > 0,
-                                                                    df.loc[ df.symbol == symbol, "unit_cnt_long" ] * df.loc[ df.symbol == symbol,
-                                                                    "split_adjusted_close"], np.nan)
-
-        #--------------------------------------------------------------------------
-        # Calculate daily return in percentage.
-        #--------------------------------------------------------------------------
-        df.loc[ df.symbol == symbol, "split_adjusted_close_pct" ] = df.loc[ df.symbol == symbol, "split_adjusted_close" ].pct_change()
-        df.loc[ df.symbol == symbol, "algo_turtle_pct" ] = np.where(df.loc[ df.symbol == symbol, "unit_cnt_long" ] > 0,
-                                                                    df.loc[ df.symbol == symbol, "split_adjusted_close_pct" ],
-                                                                    0)
-
-        #--------------------------------------------------------------------------
-        # Calculate total return in percentage.
-        #--------------------------------------------------------------------------
-        # TODO.
-        # Dollar term.
-        baseline_dollar = df.loc[ df.symbol == symbol, "split_adjusted_close" ].head(1).iloc[0]
-
-        df.loc[ (df.symbol == symbol) & (df.date >= start_date_str), "split_adjusted_close_return" ] = df.loc[ df.symbol == symbol, "split_adjusted_close_pct" ].add(1).cumprod().mul(baseline_dollar)
-
-        #--------------------------------------------------------------------------
-        # Calculate total profit and loss in dollars.
-        #--------------------------------------------------------------------------
-        # TODO.
-        # Dollar term.
-        baseline_dollar = df.loc[ (df.symbol == symbol) & (df.date >= start_date_str), "split_adjusted_close" ].head(1).iloc[0]
-
-        df.loc[ (df.symbol == symbol) & (df.date >= start_date_str), "algo_turtle_return" ] = df.loc[ df.symbol == symbol, "algo_turtle_pct" ].add(1).cumprod().mul(baseline_dollar)
-        df.loc[ (df.symbol == symbol) & (df.date >= start_date_str), "algo_turtle_equity" ] = df.loc[ df.symbol == symbol, "equity" ].div(self.INITIAL_CAPITAL).mul(baseline_dollar)
-
-        return
-
-
     def generate_all_trading_data(self, start_date_str, end_date_str):
         #--------------------------------------------------------------------------
         # Get dataframe.
@@ -1627,20 +1136,21 @@ class pandas_algo_turtle(object):
         weights = df.weights.values
 
         # Calculate positions, trade profit and loss.
-        result = pandas_algo_turtle.simulate_trading(date,
-                                                    symbol,
-                                                    split_adjusted_open,
-                                                    split_adjusted_close,
-                                                    close_entry_rolling_max,
-                                                    close_exit_rolling_min,
-                                                    atr,
-                                                    turtle_rank,
-                                                    weights,
-                                                    self.INITIAL_CAPITAL,
-                                                    start_date,
-                                                    end_date,
-                                                    self.PORTFOLIO_NUM_STOCK,
-                                                    self.VERBOSE)
+        result = pandas_algo_turtle.simulate_trading(
+            date,
+            symbol,
+            split_adjusted_open,
+            split_adjusted_close,
+            close_entry_rolling_max,
+            close_exit_rolling_min,
+            atr,
+            turtle_rank,
+            weights,
+            self.INITIAL_CAPITAL,
+            start_date,
+            end_date,
+            self.PORTFOLIO_NUM_STOCK
+        )
 
         # Testing. Delete me.
         print("[{}] [DEBUG] Add trading data to dataframe.".format(datetime.now().isoformat()))
@@ -1658,11 +1168,6 @@ class pandas_algo_turtle(object):
         df["equity"] = result[9]
         df["account_pnl"] = result[10]
         df["trade_pnl"] = result[11]
-
-        if self.VERBOSE:
-            df["cash_bod"] = result[12]
-            df["equity_bod"] = result[13]
-            df["account_pnl_bod"] = result[14]
 
         """
         # TODO.
@@ -1758,9 +1263,6 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         print("[{}] [INFO] Generating trading data...".format(datetime.now().isoformat()))
         self.generate_all_trading_data(start_date_str, end_date_str)
-
-        # for symbol in self.symbol_universe:
-        #     self.generate_trading_data(symbol, start_date_str, end_date_str)
 
         #--------------------------------------------------------------------------
         # Generate returns.
