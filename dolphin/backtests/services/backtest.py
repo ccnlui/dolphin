@@ -487,6 +487,7 @@ class pandas_algo_turtle(object):
         cash = initial_capital
         equity = cash
         account_pnl = 0
+        equity_bod = equity
 
         #--------------------------------------------------------------------------
         # Keep track of symbol variables.
@@ -611,7 +612,7 @@ class pandas_algo_turtle(object):
             equity_eod[curr_idx] = equity
             account_pnl_eod[curr_idx] = account_pnl
 
-            print("[DEBUG] BOD Mark-to-market: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+            print("[DEBUG]     Mark-to-market: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                 curr_date,
                 curr_symbol,
                 qty_long[curr_idx],
@@ -905,6 +906,7 @@ class pandas_algo_turtle(object):
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
                         cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
 
+                '''
                 #------------------------------------------------------------------
                 # High: Mark-to-market.
                 #------------------------------------------------------------------
@@ -950,6 +952,7 @@ class pandas_algo_turtle(object):
                     curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
                         cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+                '''
 
                 #------------------------------------------------------------------
                 # Close: Mark-to-market.
