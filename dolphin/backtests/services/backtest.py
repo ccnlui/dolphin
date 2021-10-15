@@ -62,6 +62,9 @@ class pandas_algo_turtle(object):
     # Round ATR.
     MODEL_PRECISION = 4
 
+    # Round std. Less than 0.01% equivalent to 0.
+    BASIS_POINT_DP = 4
+
     PENNY_PRICE = 1
     EXPENSIVE_PRICE = 1000
 
@@ -1071,6 +1074,7 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # df_symbol["std"] = df_symbol["split_adjusted_close"].rolling(self.VOL_PERIOD).std()
         df_symbol["std"] = df_symbol["split_adjusted_close"].pct_change().rolling(self.VOL_PERIOD).std()
+        df_symbol["std"] = df_symbol["std"].round(self.BASIS_POINT_DP)
 
         # Inverse standard deviation.
         df_symbol["inv_std"] = df_symbol["std"].rdiv(1)
@@ -1099,6 +1103,9 @@ class pandas_algo_turtle(object):
 
         # Disqualify symbols with a single day move exceeding 15% in the past 90 days.
         df_symbol["disqualify_volatile"] = df_symbol["abs_pct_rolling_max"] > self.SINGLE_DAY_VOLATILITY_FILTER_PCT
+
+        # Disqualify symbols with 0 standard deviation.
+        df_symbol["disqualify_stale"] = df_symbol["std"] == 0
 
         return df_symbol
 
@@ -1226,7 +1233,7 @@ class pandas_algo_turtle(object):
 
         # Rank only qualified stocks.
         # df["turtle_rank"] = df.where(~df.disqualify_penny & ~df.disqualify_volatile).groupby("date")["momentum_score"].rank(ascending=False)
-        df["turtle_rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(~df.disqualify_penny & ~df.disqualify_volatile).groupby("date")["momentum_score"].rank(ascending=False)
+        df["turtle_rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(~df.disqualify_penny & ~df.disqualify_volatile & ~df.disqualify_stale).groupby("date")["momentum_score"].rank(ascending=False)
 
         # Rank all stocks.
         # df["turtle_rank"] = df.groupby("date")["momentum_score"].rank(ascending=False)
