@@ -475,19 +475,19 @@ class pandas_algo_turtle(object):
         trade_pnl = np.full(length, np.nan)
 
         # Account specific columns.
-        cash_eod = np.full(length, np.nan)
-        equity_eod = np.full(length, np.nan)
-        account_pnl_eod = np.full(length, np.nan)
+        cash = np.full(length, np.nan)
+        equity = np.full(length, np.nan)
+        account_pnl = np.full(length, np.nan)
 
         #--------------------------------------------------------------------------
         # Initialize variables.
         #--------------------------------------------------------------------------
         trading = False
         curr_date = None
-        cash = initial_capital
-        equity = cash
-        account_pnl = 0
-        equity_bod = equity
+        curr_cash = initial_capital
+        curr_equity = curr_cash
+        curr_account_pnl = 0
+        equity_bod = curr_equity
 
         #--------------------------------------------------------------------------
         # Keep track of symbol variables.
@@ -554,7 +554,7 @@ class pandas_algo_turtle(object):
             return False
 
 
-        def liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, cash, equity, account_pnl):
+        def liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, curr_cash, curr_equity, curr_account_pnl):
 
             # Don't change previous entry.
             prev_idx = symbol_prev_idx[curr_symbol]
@@ -562,7 +562,7 @@ class pandas_algo_turtle(object):
             # Assume position liquidated at previous close.
             liquidate_cashflow = split_adjusted_close[prev_idx] * qty_long[prev_idx]
             liquidate_trade_pnl = liquidate_cashflow - book_value[prev_idx]
-            cash += liquidate_cashflow
+            curr_cash += liquidate_cashflow
 
             portfolio_symbol.remove(curr_symbol)
 
@@ -576,17 +576,17 @@ class pandas_algo_turtle(object):
                 0,
                 0,
                 0,
-                cash,
-                equity,
-                account_pnl,
+                curr_cash,
+                curr_equity,
+                curr_account_pnl,
                 liquidate_trade_pnl
             ))
             print("------------------------------------------------")
 
-            return cash, equity, account_pnl
+            return curr_cash, curr_equity, curr_account_pnl
 
 
-        def mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl):
+        def mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl):
 
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
@@ -616,13 +616,13 @@ class pandas_algo_turtle(object):
             trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
 
             # Account.
-            equity = equity - prev_market_value + market_value[curr_idx]
-            account_pnl = equity - initial_capital
+            curr_equity = curr_equity - prev_market_value + market_value[curr_idx]
+            curr_account_pnl = curr_equity - initial_capital
 
             # Account columns.
-            cash_eod[curr_idx] = cash
-            equity_eod[curr_idx] = equity
-            account_pnl_eod[curr_idx] = account_pnl
+            cash[curr_idx] = curr_cash
+            equity[curr_idx] = curr_equity
+            account_pnl[curr_idx] = curr_account_pnl
 
             print("[DEBUG]     Mark-to-market: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                 curr_date,
@@ -633,16 +633,16 @@ class pandas_algo_turtle(object):
                 book_value[curr_idx],
                 avg_price[curr_idx],
                 market_value[curr_idx],
-                cash,
-                equity,
-                account_pnl,
+                curr_cash,
+                curr_equity,
+                curr_account_pnl,
                 trade_pnl[curr_idx]
             ))
 
-            return cash, equity, account_pnl
+            return curr_cash, curr_equity, curr_account_pnl
 
 
-        def buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod):
+        def buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod):
 
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
@@ -663,12 +663,12 @@ class pandas_algo_turtle(object):
                 avg_price[curr_idx] = 0 if np.isnan(avg_price[curr_idx]) else avg_price[curr_idx]
 
                 # Account.
-                cash -= curr_price * target_qty_long
+                curr_cash -= curr_price * target_qty_long
 
                 # Account columns.
-                cash_eod[curr_idx] = cash
-                equity_eod[curr_idx] = equity
-                account_pnl_eod[curr_idx] = account_pnl
+                cash[curr_idx] = curr_cash
+                equity[curr_idx] = curr_equity
+                account_pnl[curr_idx] = curr_account_pnl
 
                 # Trade columns.
                 cashflow[curr_idx] -= curr_price * target_qty_long
@@ -681,11 +681,6 @@ class pandas_algo_turtle(object):
                 stop_loss[curr_idx] = curr_price - 2*atr[prev_idx]
                 last_fill[curr_idx] = curr_price
                 avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
-
-                # Account columns.
-                cash_eod[curr_idx] = cash
-                equity_eod[curr_idx] = equity
-                account_pnl_eod[curr_idx] = account_pnl
 
                 # Add to portfolio if not exist.
                 if portfolio_symbol.count(curr_symbol) == 0:
@@ -700,9 +695,9 @@ class pandas_algo_turtle(object):
                     book_value[curr_idx],
                     avg_price[curr_idx],
                     market_value[curr_idx],
-                    cash,
-                    equity,
-                    account_pnl,
+                    curr_cash,
+                    curr_equity,
+                    curr_account_pnl,
                     trade_pnl[curr_idx]
                 ))
 
@@ -717,15 +712,15 @@ class pandas_algo_turtle(object):
                 ))
                 print("------------------------------------------------")
             
-            return cash, equity, account_pnl
+            return curr_cash, curr_equity, curr_account_pnl
 
 
-        def sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl):
+        def sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl):
 
             curr_idx = symbol_curr_idx[curr_symbol]
 
             # Account.
-            cash += curr_price * qty_long[curr_idx]
+            curr_cash += curr_price * qty_long[curr_idx]
 
             # Trade columns.
             cashflow[curr_idx] += curr_price * qty_long[curr_idx]
@@ -743,9 +738,9 @@ class pandas_algo_turtle(object):
             avg_price[curr_idx] = 0
 
             # Account columns.
-            cash_eod[curr_idx] = cash
-            equity_eod[curr_idx] = equity
-            account_pnl_eod[curr_idx] = account_pnl
+            cash[curr_idx] = curr_cash
+            equity[curr_idx] = curr_equity
+            account_pnl[curr_idx] = curr_account_pnl
 
             portfolio_symbol.remove(curr_symbol)
 
@@ -758,22 +753,22 @@ class pandas_algo_turtle(object):
                 book_value[curr_idx],
                 avg_price[curr_idx],
                 market_value[curr_idx],
-                cash,
-                equity,
-                account_pnl,
+                curr_cash,
+                curr_equity,
+                curr_account_pnl,
                 trade_pnl[curr_idx]
             ))
 
-            return cash, equity, account_pnl
+            return curr_cash, curr_equity, curr_account_pnl
 
 
-        def rebalance(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl):
+        def rebalance(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod):
 
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
 
             # Rebalance trade.
-            target_qty_long = np.floor(equity * weights[prev_idx] / curr_price)
+            target_qty_long = np.floor(equity_bod * weights[prev_idx] / curr_price)
             delta_qty_long = target_qty_long - qty_long[curr_idx]
 
             # Add to position.
@@ -827,12 +822,12 @@ class pandas_algo_turtle(object):
                     avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
 
             # Account.
-            cash += cashflow[curr_idx]
+            curr_cash += cashflow[curr_idx]
 
             # Account columns.
-            cash_eod[curr_idx] = cash
-            equity_eod[curr_idx] = equity
-            account_pnl_eod[curr_idx] = account_pnl
+            cash[curr_idx] = curr_cash
+            equity[curr_idx] = curr_equity
+            account_pnl[curr_idx] = curr_account_pnl
 
             print("[INFO]           Rebalance: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                 curr_date,
@@ -843,13 +838,13 @@ class pandas_algo_turtle(object):
                 book_value[curr_idx],
                 avg_price[curr_idx],
                 market_value[curr_idx],
-                cash,
-                equity,
-                account_pnl,
+                curr_cash,
+                curr_equity,
+                curr_account_pnl,
                 trade_pnl[curr_idx]
             ))
 
-            return cash, equity, account_pnl
+            return curr_cash, curr_equity, curr_account_pnl
 
         #--------------------------------------------------------------------------
         # Process tick data.
@@ -901,15 +896,15 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 for curr_symbol in portfolio_symbol:
                     if curr_symbol not in symbol_curr_idx:
-                        cash, equity, account_pnl = liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, cash, equity, account_pnl)
+                        curr_cash, curr_equity, acurr_ccount_pnl = liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
                 # Open: Mark-to-market.
                 #------------------------------------------------------------------
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
-                    cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
-                    equity_bod = equity
+                    curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl)
+                    equity_bod = curr_equity
 
                 #------------------------------------------------------------------
                 # Open: Sell.
@@ -917,14 +912,14 @@ class pandas_algo_turtle(object):
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
                     if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        cash, equity, account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl)
+                        curr_cash, curr_equity, curr_account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
                 # Open: Rebalance.
                 #------------------------------------------------------------------
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
-                    cash, equity, account_pnl = rebalance(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+                    curr_cash, curr_equity, curr_account_pnl = rebalance(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
                 #------------------------------------------------------------------
                 # Open: Buy.
@@ -932,7 +927,7 @@ class pandas_algo_turtle(object):
                 for curr_symbol in prev_watchlist:
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+                        curr_cash, curr_equity, curr_account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
                 '''
                 #------------------------------------------------------------------
@@ -940,7 +935,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
-                    cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+                    curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
                 # High: Sell.
@@ -948,7 +943,7 @@ class pandas_algo_turtle(object):
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
                     if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        cash, equity, account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl)
+                        curr_cash, curr_equity, curr_account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
                 # High: Buy.
@@ -956,14 +951,14 @@ class pandas_algo_turtle(object):
                 for curr_symbol in prev_watchlist:
                     curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+                        curr_cash, curr_equity, curr_account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
                 #------------------------------------------------------------------
                 # Low: Mark-to-market.
                 #------------------------------------------------------------------
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_low[symbol_curr_idx[curr_symbol]]
-                    cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+                    curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
                 # Low: Sell.
@@ -971,7 +966,7 @@ class pandas_algo_turtle(object):
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_low[symbol_curr_idx[curr_symbol]]
                     if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        cash, equity, account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl)
+                        curr_cash, curr_equity, curr_account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
                 # Low: Buy.
@@ -979,7 +974,7 @@ class pandas_algo_turtle(object):
                 for curr_symbol in prev_watchlist:
                     curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+                        curr_cash, curr_equity, curr_account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
                 '''
 
                 #------------------------------------------------------------------
@@ -987,7 +982,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
-                    cash, equity, account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl)
+                    curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
                 # Close: Sell.
@@ -995,7 +990,7 @@ class pandas_algo_turtle(object):
                 for curr_symbol in portfolio_symbol:
                     curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
                     if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        cash, equity, account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, cash, equity, account_pnl)
+                        curr_cash, curr_equity, curr_account_pnl = sell(curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
                 # Close: Buy.
@@ -1003,15 +998,9 @@ class pandas_algo_turtle(object):
                 for curr_symbol in prev_watchlist:
                     curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        cash, equity, account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, cash, equity, account_pnl, equity_bod)
+                        curr_cash, curr_equity, curr_account_pnl = buy(curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
-                #------------------------------------------------------------------
-                # After-market.
-                #------------------------------------------------------------------
-
-            result = [stop_loss, last_fill, cnt_long, qty_long, cashflow, book_value, avg_price, market_value, cash, equity, account_pnl, trade_pnl]
-
-        return result
+        return cnt_long, qty_long, stop_loss, last_fill, avg_price, cashflow, book_value, market_value, trade_pnl, cash, equity, account_pnl
 
 
 
@@ -1187,18 +1176,18 @@ class pandas_algo_turtle(object):
         print("[{}] [DEBUG] Add trading data to dataframe.".format(datetime.now().isoformat()))
 
         # Unpack result.
-        df["stop_loss"] = result[0]
-        df["last_fill"] = result[1]
-        df["unit_cnt_long"] = result[2]
-        df["unit_qty_long"] = result[3]
-        df["cashflow"] = result[4]
-        df["book_value"] = result[5]
-        df["avg_price"] = result[6]
+        df["cnt_long"] = result[0]
+        df["qty_long"] = result[1]
+        df["stop_loss"] = result[2]
+        df["last_fill"] = result[3]
+        df["avg_price"] = result[4]
+        df["cashflow"] = result[5]
+        df["book_value"] = result[6]
         df["market_value"] = result[7]
-        df["cash"] = result[8]
-        df["equity"] = result[9]
-        df["account_pnl"] = result[10]
-        df["trade_pnl"] = result[11]
+        df["trade_pnl"] = result[8]
+        df["cash"] = result[9]
+        df["equity"] = result[10]
+        df["account_pnl"] = result[11]
 
         """
         # TODO.
@@ -1211,8 +1200,8 @@ class pandas_algo_turtle(object):
             #--------------------------------------------------------------------------
             # Calculate long + short exposure data.
             #--------------------------------------------------------------------------
-            df.loc[ df.symbol == symbol, "long_exposure" ] = np.where(df.loc[ df.symbol == symbol, "unit_cnt_long" ] > 0,
-                                                                        df.loc[ df.symbol == symbol, "unit_cnt_long" ] * df.loc[ df.symbol == symbol, "split_adjusted_close"],
+            df.loc[ df.symbol == symbol, "long_exposure" ] = np.where(df.loc[ df.symbol == symbol, "cnt_long" ] > 0,
+                                                                        df.loc[ df.symbol == symbol, "cnt_long" ] * df.loc[ df.symbol == symbol, "split_adjusted_close"],
                                                                         np.nan)
 
             #--------------------------------------------------------------------------
@@ -1494,12 +1483,12 @@ class pandas_algo_turtle(object):
                 trade_info[row.symbol] = [row.date, row]
 
             # Update last open trade.
-            elif row.symbol in trade_info and row.unit_cnt_long == 1:
+            elif row.symbol in trade_info and row.cnt_long == 1:
 
                 trade_info[row.symbol][1] = row
 
             # Pop entry and store both entry and exit to list.
-            elif row.symbol in trade_info and row.unit_cnt_long == 0:
+            elif row.symbol in trade_info and row.cnt_long == 0:
 
                 # Unpack list.
                 symbol_trade_info = trade_info.pop(row.symbol)
