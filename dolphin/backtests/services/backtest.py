@@ -97,14 +97,14 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP"]
+        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
-        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        # self.symbol_universe.sort()
-        # if "raw" in self.symbol_universe:
-        #     self.symbol_universe.remove('raw')
+        self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
+        self.symbol_universe.sort()
+        if "raw" in self.symbol_universe:
+            self.symbol_universe.remove('raw')
 
         self.curr_split_factor = None
 
@@ -933,6 +933,13 @@ class pandas_algo_turtle(object):
                 # Open: Buy.
                 #------------------------------------------------------------------
                 for curr_symbol in prev_watchlist:
+
+                    # Delisted or halted.
+                    if curr_symbol not in symbol_curr_idx:
+                        print("------------------------------------------------")
+                        print("[WARNING] Watchlist symbol: {} not available for trading on {}.".format(curr_symbol, curr_date))
+                        continue
+
                     curr_tick = 'O'
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
