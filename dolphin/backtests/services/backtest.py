@@ -1028,56 +1028,6 @@ class pandas_algo_turtle(object):
         return cnt_long, qty_long, stop_loss, last_fill, avg_price, cashflow, book_value, market_value, trade_pnl, cash, equity, account_pnl
 
 
-
-    def generate_indicators(self, symbol):
-        #--------------------------------------------------------------------------
-        # Get dataframe.
-        #--------------------------------------------------------------------------
-        df = self.df
-
-        #--------------------------------------------------------------------------
-        # Calculate rolling max/min of close.
-        #--------------------------------------------------------------------------
-        # Exit.
-        df.loc[ df.symbol == symbol, "close_exit_rolling_max" ] = df.loc[ df.symbol == symbol, "split_adjusted_close" ].rolling(self.TURTLE_PERIOD_EXIT).max()
-        df.loc[ df.symbol == symbol, "close_exit_rolling_min" ] = df.loc[ df.symbol == symbol, "split_adjusted_close" ].rolling(self.TURTLE_PERIOD_EXIT).min()
-
-        # Entry.
-        df.loc[ df.symbol == symbol, "close_entry_rolling_max" ] = df.loc[ df.symbol == symbol, "split_adjusted_close" ].rolling(self.TURTLE_PERIOD_ENTRY).max()
-        df.loc[ df.symbol == symbol, "close_entry_rolling_min" ] = df.loc[ df.symbol == symbol, "split_adjusted_close" ].rolling(self.TURTLE_PERIOD_ENTRY).min()
-
-        #--------------------------------------------------------------------------
-        # Calculate true range + ATR.
-        #--------------------------------------------------------------------------
-        # Range 1: High - low.
-        range_1 = df.loc[ df.symbol == symbol, "split_adjusted_high" ] - df.loc[ df.symbol == symbol, "split_adjusted_low" ]
-
-        # Range 2: High - previous close.
-        range_2 = df.loc[ df.symbol == symbol, "split_adjusted_high" ] - df.loc[ df.symbol == symbol, "split_adjusted_close" ].shift(1)
-
-        # Range 3: Previous close - low.
-        range_3 = df.loc[ df.symbol == symbol, "split_adjusted_close" ].shift(1) - df.loc[ df.symbol == symbol, "split_adjusted_low" ]
-
-        # True range.
-        df.loc[ df.symbol == symbol, "true_range" ] = pd.concat([range_1, range_2, range_3], axis=1).max(axis=1)
-
-        # Calculate ATR using exponentially moving window.
-        df.loc[ df.symbol == symbol, "atr" ] = df.loc[ df.symbol == symbol, "true_range" ].ewm(alpha=self.ATR_SMOOTHING_FACTOR, min_periods=self.ATR_PERIOD).mean()
-
-        # Inverse ATR.
-        df.loc[ df.symbol == symbol, "inv_atr" ] = df.loc[ df.symbol == symbol, "atr" ].rdiv(1)
-
-        #--------------------------------------------------------------------------
-        # Exponential regression.
-        #--------------------------------------------------------------------------
-        try:
-            df.loc[ df.symbol == symbol, "momentum_score" ] = df.loc[ df.symbol == symbol, "split_adjusted_close" ].rolling(self.MOMENTUM_WINDOW).apply(pandas_algo_turtle.momentum_score, raw=True)
-        except:
-            code.interact(local=locals())
-
-        return
-
-
     def generate_symbol_indicators(self, df_symbol):
 
         print("[{}] [INFO] Generating indicators for symbol: {}".format(datetime.now().isoformat(), df_symbol.symbol.iloc[0]))
@@ -1267,13 +1217,6 @@ class pandas_algo_turtle(object):
 
 
     def backtest_turtle_rules(self, start_date_str, end_date_str):
-        #--------------------------------------------------------------------------
-        # Generate symbol indicators.
-        #--------------------------------------------------------------------------
-        # print("[{}] Generating symbol indicators...".format(datetime.now().isoformat()))
-        # for symbol in self.symbol_universe:
-
-        #     self.generate_indicators(symbol)
 
         df = self.df
         #--------------------------------------------------------------------------
