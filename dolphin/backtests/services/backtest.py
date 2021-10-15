@@ -905,6 +905,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Open: Mark-to-market.
                 #------------------------------------------------------------------
+                equity_bod = curr_equity
                 for curr_symbol in portfolio_symbol:
                     curr_tick = 'O'
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
