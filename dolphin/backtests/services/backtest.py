@@ -1548,28 +1548,34 @@ class pandas_algo_turtle(object):
         start_date_ts = pd.Timestamp(start_date_str)
         end_date_ts = pd.Timestamp(end_date_str)
 
-        #--------------------------------------------------------------------------
-        # Create named tuple trade.
-        #--------------------------------------------------------------------------
-        ReturnTuple = namedtuple("ReturnTuple", "date equity")
+        # #--------------------------------------------------------------------------
+        # # Create named tuple trade.
+        # #--------------------------------------------------------------------------
+        # ReturnTuple = namedtuple("ReturnTuple", "date equity")
 
-        for row in df.itertuples():
+        # for row in df.itertuples():
 
-            # Add to list if we reach a new date.
-            if row.Index > 0 and row.date > prev_row.date and prev_row.date >= start_date_ts and prev_row.date <= end_date_ts:
-                return_values.append(ReturnTuple(prev_row.date, prev_row.equity))
+        #     # Add to list if we reach a new date.
+        #     if row.Index > 0 and row.date > prev_row.date and prev_row.date >= start_date_ts and prev_row.date <= end_date_ts:
+        #         return_values.append(ReturnTuple(prev_row.date, prev_row.equity))
 
-            # Add to list if we reach the end of dataframe.
-            if row.Index+1 == df.shape[0] and row.date >= start_date_ts and row.date <= end_date_ts:
-                return_values.append(ReturnTuple(row.date, row.equity))
+        #     # Add to list if we reach the end of dataframe.
+        #     if row.Index+1 == df.shape[0] and row.date >= start_date_ts and row.date <= end_date_ts:
+        #         return_values.append(ReturnTuple(row.date, row.equity))
 
-            # Next iteration.
-            prev_row = row
+        #     # Next iteration.
+        #     prev_row = row
 
-        #--------------------------------------------------------------------------
-        # Convert to dataframe.
-        #--------------------------------------------------------------------------
-        df_returns = pd.DataFrame(return_values)
+        # #--------------------------------------------------------------------------
+        # # Convert to dataframe.
+        # #--------------------------------------------------------------------------
+        # df_returns = pd.DataFrame(return_values)
+        # df_returns["returns"] = df_returns.equity.pct_change()
+
+        # Last row of every group.
+        df_returns = df.loc[~df.equity.isna()].sort_values(by=['date', 'symbol']).groupby(['date']).last()
+        df_returns.reset_index(inplace=True)
+        df_returns = df_returns.loc[:,['date', 'equity']]
         df_returns["returns"] = df_returns.equity.pct_change()
 
         return df_returns
