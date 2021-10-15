@@ -591,20 +591,32 @@ class pandas_algo_turtle(object):
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
 
-            # Trade columns.
-            cnt_long[curr_idx] = cnt_long[prev_idx]
-            qty_long[curr_idx] = qty_long[prev_idx]
-            stop_loss[curr_idx] = stop_loss[prev_idx]
-            last_fill[curr_idx] = last_fill[prev_idx]
-            avg_price[curr_idx] = avg_price[prev_idx]
+            # Carry over if necessary.
+            cnt_long[curr_idx] = cnt_long[prev_idx] if np.isnan(cnt_long[curr_idx]) else cnt_long[curr_idx]
+            qty_long[curr_idx] = qty_long[prev_idx] if np.isnan(qty_long[curr_idx]) else qty_long[curr_idx]
+            stop_loss[curr_idx] = stop_loss[prev_idx] if np.isnan(stop_loss[curr_idx]) else stop_loss[curr_idx]
+            last_fill[curr_idx] = last_fill[prev_idx] if np.isnan(last_fill[curr_idx]) else last_fill[curr_idx]
+            avg_price[curr_idx] = avg_price[prev_idx] if np.isnan(avg_price[curr_idx]) else avg_price[curr_idx]
+            cashflow[curr_idx] = cashflow[prev_idx] if np.isnan(cashflow[curr_idx]) else cashflow[curr_idx]
+            book_value[curr_idx] = book_value[prev_idx] if np.isnan(book_value[curr_idx]) else book_value[curr_idx]
+            market_value[curr_idx] = market_value[prev_idx] if np.isnan(market_value[curr_idx]) else market_value[curr_idx]
+            trade_pnl[curr_idx] = trade_pnl[prev_idx] if np.isnan(trade_pnl[curr_idx]) else trade_pnl[curr_idx]
 
-            cashflow[curr_idx] = 0
-            book_value[curr_idx] = book_value[prev_idx]
+            # Trade columns.
+            # cnt_long[curr_idx]
+            # qty_long[curr_idx]
+            # stop_loss[curr_idx]
+            # last_fill[curr_idx]
+            # avg_price[curr_idx]
+
+            # cashflow[curr_idx]
+            # book_value[curr_idx]
+            prev_market_value = market_value[curr_idx]
             market_value[curr_idx] = curr_price * qty_long[curr_idx]
             trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
 
             # Account.
-            equity = equity - market_value[prev_idx] + market_value[curr_idx]
+            equity = equity - prev_market_value + market_value[curr_idx]
             account_pnl = equity - initial_capital
 
             # Account columns.
@@ -737,7 +749,7 @@ class pandas_algo_turtle(object):
 
             portfolio_symbol.remove(curr_symbol)
 
-            print("         [INFO] Exit trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+            print("[INFO]          Exit trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                 curr_date,
                 curr_symbol,
                 qty_long[curr_idx],
@@ -822,7 +834,7 @@ class pandas_algo_turtle(object):
             equity_eod[curr_idx] = equity
             account_pnl_eod[curr_idx] = account_pnl
 
-            print("          [INFO] Rebalance: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
+            print("[INFO]           Rebalance: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                 curr_date,
                 curr_symbol,
                 qty_long[curr_idx],
