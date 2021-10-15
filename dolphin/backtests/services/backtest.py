@@ -511,7 +511,7 @@ class pandas_algo_turtle(object):
                 return False
 
             # Not rank.
-            if turtle_rank[prev_idx] > portfolio_num_stock:
+            if np.isnan(turtle_rank[prev_idx]) or turtle_rank[prev_idx] > portfolio_num_stock:
                 return False
 
             # Entry level.
@@ -545,7 +545,7 @@ class pandas_algo_turtle(object):
                 return True
 
             # Not rank.
-            if turtle_rank[prev_idx] > portfolio_num_stock:
+            if np.isnan(turtle_rank[prev_idx]) or turtle_rank[prev_idx] > portfolio_num_stock:
                 return True
 
             # Volatile.
