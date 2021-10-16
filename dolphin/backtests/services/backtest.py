@@ -100,14 +100,14 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL"]
+        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
-        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        # self.symbol_universe.sort()
-        # if "raw" in self.symbol_universe:
-        #     self.symbol_universe.remove('raw')
+        self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
+        self.symbol_universe.sort()
+        if "raw" in self.symbol_universe:
+            self.symbol_universe.remove('raw')
 
         self.curr_split_factor = None
 
@@ -901,11 +901,11 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Pre-market: liquidate halted/delisted symbols.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol:
+                for curr_symbol in portfolio_symbol.copy():
                     if curr_symbol not in symbol_curr_idx:
                         curr_cash, curr_equity, acurr_ccount_pnl = liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, curr_cash, curr_equity, curr_account_pnl, prev_watchlist)
 
-                for curr_symbol in prev_watchlist:
+                for curr_symbol in prev_watchlist.copy():
                     if curr_symbol not in symbol_curr_idx:
                         print("------------------------------------------------")
                         print("[WARNING] Watchlist symbol: {} not available for trading on {}.".format(curr_symbol, curr_date))
@@ -925,7 +925,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Open: Sell.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol:
+                for curr_symbol in portfolio_symbol.copy():
                     curr_tick = 'O'
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
                     if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
@@ -942,7 +942,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Open: Buy.
                 #------------------------------------------------------------------
-                for curr_symbol in prev_watchlist:
+                for curr_symbol in prev_watchlist.copy():
                     curr_tick = 'O'
                     curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
@@ -960,7 +960,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # High: Sell.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol:
+                for curr_symbol in portfolio_symbol.copy():
                     curr_tick = 'H'
                     curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
                     if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
@@ -969,7 +969,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # High: Buy.
                 #------------------------------------------------------------------
-                for curr_symbol in prev_watchlist:
+                for curr_symbol in prev_watchlist.copy():
                     curr_tick = 'H'
                     curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
@@ -986,7 +986,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Low: Sell.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol:
+                for curr_symbol in portfolio_symbol.copy():
                     curr_tick = 'L'
                     curr_price = split_adjusted_low[symbol_curr_idx[curr_symbol]]
                     if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
@@ -995,7 +995,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Low: Buy.
                 #------------------------------------------------------------------
-                for curr_symbol in prev_watchlist:
+                for curr_symbol in prev_watchlist.copy():
                     curr_tick = 'L'
                     curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
@@ -1013,7 +1013,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Close: Sell.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol:
+                for curr_symbol in portfolio_symbol.copy():
                     curr_tick = 'C'
                     curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
                     if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
@@ -1022,7 +1022,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Close: Buy.
                 #------------------------------------------------------------------
-                for curr_symbol in prev_watchlist:
+                for curr_symbol in prev_watchlist.copy():
                     curr_tick = 'C'
                     curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
