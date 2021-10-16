@@ -100,14 +100,14 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX"]
+        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
-        self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        self.symbol_universe.sort()
-        if "raw" in self.symbol_universe:
-            self.symbol_universe.remove('raw')
+        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
+        # self.symbol_universe.sort()
+        # if "raw" in self.symbol_universe:
+        #     self.symbol_universe.remove('raw')
 
         self.curr_split_factor = None
 
@@ -1102,7 +1102,7 @@ class pandas_algo_turtle(object):
         df_symbol["disqualify_penny"] = df_symbol["split_adjusted_close"] < self.PENNY_PRICE
 
         # Disqualify symbols trading above $1000.00.
-        df_symbol["disqualify_expensive"] = df_symbol["split_adjusted_close"] < self.EXPENSIVE_PRICE
+        df_symbol["disqualify_expensive"] = df_symbol["split_adjusted_close"] > self.EXPENSIVE_PRICE
 
         # Disqualify symbols with a single day move exceeding 15% in the past 90 days.
         df_symbol["disqualify_volatile"] = df_symbol["abs_pct_rolling_max"] > self.SINGLE_DAY_VOLATILITY_FILTER_PCT
