@@ -467,6 +467,7 @@ class pandas_algo_turtle(object):
         length = date.shape[0]
 
         # Trade specific columns.
+        trade_id = np.full(length, np.nan)
         cnt_long = np.full(length, np.nan)
         qty_long = np.full(length, np.nan)
         stop_loss = np.full(length, np.nan)
@@ -486,6 +487,7 @@ class pandas_algo_turtle(object):
         # Initialize variables.
         #--------------------------------------------------------------------------
         trading = False
+        curr_trade_id = 0
         curr_date = None
         curr_cash = initial_capital
         curr_equity = curr_cash
@@ -505,6 +507,12 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Inner helper.
         #--------------------------------------------------------------------------
+        def new_trade_id():
+            nonlocal curr_trade_id
+            curr_trade_id += 1
+            return curr_trade_id
+
+
         def buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
 
             curr_idx = symbol_curr_idx[curr_symbol]
@@ -596,7 +604,8 @@ class pandas_algo_turtle(object):
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
 
-            # Carry over if necessary.
+            # Carry over if at open.
+            trade_id[curr_idx] = trade_id[prev_idx] if np.isnan(trade_id[curr_idx]) else trade_id[curr_idx]
             cnt_long[curr_idx] = cnt_long[prev_idx] if np.isnan(cnt_long[curr_idx]) else cnt_long[curr_idx]
             qty_long[curr_idx] = qty_long[prev_idx] if np.isnan(qty_long[curr_idx]) else qty_long[curr_idx]
             stop_loss[curr_idx] = stop_loss[prev_idx] if np.isnan(stop_loss[curr_idx]) else stop_loss[curr_idx]
@@ -608,6 +617,7 @@ class pandas_algo_turtle(object):
             trade_pnl[curr_idx] = trade_pnl[prev_idx] if np.isnan(trade_pnl[curr_idx]) else trade_pnl[curr_idx]
 
             # Trade columns.
+            # trade_id[curr_idx]
             # cnt_long[curr_idx]
             # qty_long[curr_idx]
             # stop_loss[curr_idx]
@@ -662,6 +672,7 @@ class pandas_algo_turtle(object):
                 book_value[curr_idx] = 0 if np.isnan(book_value[curr_idx]) else book_value[curr_idx]
                 market_value[curr_idx] = 0 if np.isnan(market_value[curr_idx]) else market_value[curr_idx]
                 trade_pnl[curr_idx] = 0 if np.isnan(trade_pnl[curr_idx]) else trade_pnl[curr_idx]
+                trade_id[curr_idx] = new_trade_id() if np.isnan(trade_id[curr_idx]) else trade_id[curr_idx]
                 cnt_long[curr_idx] = 0 if np.isnan(cnt_long[curr_idx]) else cnt_long[curr_idx]
                 qty_long[curr_idx] = 0 if np.isnan(qty_long[curr_idx]) else qty_long[curr_idx]
                 stop_loss[curr_idx] = 0 if np.isnan(stop_loss[curr_idx]) else stop_loss[curr_idx]
@@ -738,6 +749,7 @@ class pandas_algo_turtle(object):
             trade_pnl[curr_idx] = book_value[curr_idx] * -1
             book_value[curr_idx] = 0
 
+            # trade_id[curr_idx]
             cnt_long[curr_idx] = 0
             qty_long[curr_idx] = 0
             stop_loss[curr_idx] = 0
@@ -788,6 +800,7 @@ class pandas_algo_turtle(object):
                 market_value[curr_idx] += curr_price * delta_qty_long
                 trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
 
+                # trade_id[curr_idx]
                 # cnt_long[curr_idx]
                 qty_long[curr_idx] += delta_qty_long
                 # stop_loss[curr_idx]
@@ -807,6 +820,7 @@ class pandas_algo_turtle(object):
                     trade_pnl[curr_idx] = book_value[curr_idx] * -1
                     book_value[curr_idx] = 0
 
+                    # trade_id[curr_idx]
                     cnt_long[curr_idx] = 0
                     qty_long[curr_idx] = 0
                     stop_loss[curr_idx] = 0
@@ -823,6 +837,7 @@ class pandas_algo_turtle(object):
                     market_value[curr_idx] += curr_price * delta_qty_long
                     trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
 
+                    # trade_id[curr_idx]
                     # cnt_long[curr_idx]
                     qty_long[curr_idx] += delta_qty_long
                     # stop_loss[curr_idx]
@@ -1030,7 +1045,7 @@ class pandas_algo_turtle(object):
                     if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
                         curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
-        return cnt_long, qty_long, stop_loss, last_fill, avg_price, cashflow, book_value, market_value, trade_pnl, cash, equity, account_pnl
+        return trade_id, cnt_long, qty_long, stop_loss, last_fill, avg_price, cashflow, book_value, market_value, trade_pnl, cash, equity, account_pnl
 
 
     def generate_symbol_indicators(self, df_symbol):
@@ -1163,18 +1178,19 @@ class pandas_algo_turtle(object):
         print("[{}] [DEBUG] Add trading data to dataframe.".format(datetime.now().isoformat()))
 
         # Unpack result.
-        df["cnt_long"] = result[0]
-        df["qty_long"] = result[1]
-        df["stop_loss"] = result[2]
-        df["last_fill"] = result[3]
-        df["avg_price"] = result[4]
-        df["cashflow"] = result[5]
-        df["book_value"] = result[6]
-        df["market_value"] = result[7]
-        df["trade_pnl"] = result[8]
-        df["cash"] = result[9]
-        df["equity"] = result[10]
-        df["account_pnl"] = result[11]
+        df["trade_id"] = result[0]
+        df["cnt_long"] = result[1]
+        df["qty_long"] = result[2]
+        df["stop_loss"] = result[3]
+        df["last_fill"] = result[4]
+        df["avg_price"] = result[5]
+        df["cashflow"] = result[6]
+        df["book_value"] = result[7]
+        df["market_value"] = result[8]
+        df["trade_pnl"] = result[9]
+        df["cash"] = result[10]
+        df["equity"] = result[11]
+        df["account_pnl"] = result[12]
 
         """
         # TODO.
