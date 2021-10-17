@@ -518,6 +518,7 @@ class pandas_algo_turtle(object):
                 return False
 
             # Entry level.
+            # if True:
             if curr_price >= close_entry_rolling_max[prev_idx]:
                 return True
 
@@ -532,6 +533,7 @@ class pandas_algo_turtle(object):
                 return False
 
             # Exit level.
+            # if False:
             if curr_price <= close_exit_rolling_min[prev_idx]:
                 return True
 
