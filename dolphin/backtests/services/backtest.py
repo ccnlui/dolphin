@@ -69,6 +69,9 @@ class pandas_algo_turtle(object):
     PENNY_PRICE = 1
     EXPENSIVE_PRICE = 1000
 
+    # Market trend.
+    MARKET_TREND_FILTER_DAYS = 200
+
     #--------------------------------------------------------------------------
     # Variables.
     #--------------------------------------------------------------------------
@@ -101,14 +104,14 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
+        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
-        self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        self.symbol_universe.sort()
-        if "raw" in self.symbol_universe:
-            self.symbol_universe.remove('raw')
+        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
+        # self.symbol_universe.sort()
+        # if "raw" in self.symbol_universe:
+        #     self.symbol_universe.remove('raw')
 
         self.curr_split_factor = None
 
@@ -247,6 +250,18 @@ class pandas_algo_turtle(object):
         # Read raw daily adjusted from database.
         #----------------------------------------------------------------------
         df_list = get_symbol_list_daily_split_adjusted_df_list(symbol_universe, prefetch_start_date.isoformat(), end_date.isoformat())
+
+        #--------------------------------------------------------------------------
+        # Index close + market trend filter.
+        #--------------------------------------------------------------------------
+        symbol_index = 'SPY'
+        df_index = get_daily_split_adjusted_df(symbol_index, prefetch_start_date.isoformat(), end_date.isoformat())
+        df_index = df_index.loc[ :, ['date', 'split_adjusted_close']]
+        df_index.rename(columns={'split_adjusted_close': 'index_close'}, inplace=True)
+        df_index.set_index('date', inplace=True)
+        df_index['index_close_sma'] = df_index.index_close.rolling(self.MARKET_TREND_FILTER_DAYS).mean()
+        df_index['market_trend_filter'] = df_index.index_close > df_index.index_close_sma
+        df_list = [ df.join(df_index, on='date') for df in df_list ]
 
         #--------------------------------------------------------------------------
         # Generate symbol indicators.
@@ -454,6 +469,7 @@ class pandas_algo_turtle(object):
         split_adjusted_close,
         close_entry_rolling_max,
         close_exit_rolling_min,
+        market_trend_filter,
         atr,
         turtle_rank,
         weights,
@@ -670,7 +686,7 @@ class pandas_algo_turtle(object):
 
             target_qty_long = np.floor(equity_bod * weights[prev_idx] / curr_price)
 
-            if target_qty_long > 0:
+            if market_trend_filter[curr_idx] and target_qty_long > 0:
 
                 # Initialize columns.
                 cashflow[curr_idx] = 0 if np.isnan(cashflow[curr_idx]) else cashflow[curr_idx]
@@ -799,7 +815,7 @@ class pandas_algo_turtle(object):
             delta_qty_long = target_qty_long - qty_long[curr_idx]
 
             # Add to position.
-            if delta_qty_long > 0:
+            if market_trend_filter[curr_idx] and delta_qty_long > 0:
 
                 # Trade columns.
                 cashflow[curr_idx] -= curr_price * delta_qty_long
@@ -1161,6 +1177,7 @@ class pandas_algo_turtle(object):
         split_adjusted_close = df.split_adjusted_close.values
         close_entry_rolling_max = df.close_entry_rolling_max.values
         close_exit_rolling_min = df.close_exit_rolling_min.values
+        market_trend_filter = df.market_trend_filter.values
         atr = df.atr.values
         turtle_rank = df.turtle_rank.values
         weights = df.weights.values
@@ -1173,6 +1190,7 @@ class pandas_algo_turtle(object):
             split_adjusted_close,
             close_entry_rolling_max,
             close_exit_rolling_min,
+            market_trend_filter,
             atr,
             turtle_rank,
             weights,
