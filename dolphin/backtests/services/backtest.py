@@ -34,6 +34,7 @@ import pyfolio.timeseries as pt
 import multiprocessing as mp
 
 import csv
+import bisect
 
 
 class pandas_algo_turtle(object):
@@ -100,7 +101,7 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL"]
+        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
@@ -521,6 +522,10 @@ class pandas_algo_turtle(object):
             if cnt_long[curr_idx] > 0:
                 return False
 
+            # Don't buy if it is sold earlier the day.
+            if not np.isnan(trade_id[curr_idx]):
+                return False
+
             # Not rank.
             if np.isnan(turtle_rank[prev_idx]) or turtle_rank[prev_idx] > portfolio_num_stock:
                 return False
@@ -659,9 +664,6 @@ class pandas_algo_turtle(object):
 
 
         def buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod):
-            '''
-            Enter a new trade, long position.
-            '''
 
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
@@ -675,7 +677,7 @@ class pandas_algo_turtle(object):
                 book_value[curr_idx] = 0 if np.isnan(book_value[curr_idx]) else book_value[curr_idx]
                 market_value[curr_idx] = 0 if np.isnan(market_value[curr_idx]) else market_value[curr_idx]
                 trade_pnl[curr_idx] = 0 if np.isnan(trade_pnl[curr_idx]) else trade_pnl[curr_idx]
-                trade_id[curr_idx] = new_trade_id()
+                trade_id[curr_idx] = new_trade_id() if np.isnan(trade_id[curr_idx]) else trade_id[curr_idx]
                 cnt_long[curr_idx] = 0 if np.isnan(cnt_long[curr_idx]) else cnt_long[curr_idx]
                 qty_long[curr_idx] = 0 if np.isnan(qty_long[curr_idx]) else qty_long[curr_idx]
                 stop_loss[curr_idx] = 0 if np.isnan(stop_loss[curr_idx]) else stop_loss[curr_idx]
@@ -704,7 +706,9 @@ class pandas_algo_turtle(object):
 
                 # Add to portfolio if not exist.
                 if portfolio_symbol.count(curr_symbol) == 0:
-                    portfolio_symbol.append(curr_symbol)
+                    # portfolio_symbol.append(curr_symbol)
+                    bisect.insort(portfolio_symbol, curr_symbol)
+
 
                 print("[INFO]      Enter trade {}: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                     curr_tick,
@@ -907,7 +911,8 @@ class pandas_algo_turtle(object):
 
             # Watchlist.
             if turtle_rank[idx] <= portfolio_num_stock:
-                curr_watchlist.append(symbol_str)
+                # curr_watchlist.append(symbol_str)
+                bisect.insort(curr_watchlist, symbol_str)
 
             #------------------------------------------------------------------
             # Trading.
