@@ -63,8 +63,8 @@ class pandas_algo_turtle(object):
     # Round ATR.
     MODEL_PRECISION = 4
 
-    # Round std. Less than 0.01% equivalent to 0.
-    BASIS_POINT_DP = 4
+    # Round std. Minimum is 1%.
+    BASIS_POINT_DP = 2
 
     PENNY_PRICE = 1
     EXPENSIVE_PRICE = 1000
@@ -101,7 +101,7 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
+        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
