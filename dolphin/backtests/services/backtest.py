@@ -104,14 +104,14 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
+        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
-        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        # self.symbol_universe.sort()
-        # if "raw" in self.symbol_universe:
-        #     self.symbol_universe.remove('raw')
+        self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
+        self.symbol_universe.sort()
+        if "raw" in self.symbol_universe:
+            self.symbol_universe.remove('raw')
 
         self.curr_split_factor = None
 
@@ -131,7 +131,7 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         start_date = date.fromisoformat(start_date_str)
         end_date = date.fromisoformat(end_date_str)
-        prefetch_start_date = start_date - relativedelta(months=6)
+        prefetch_start_date = start_date - relativedelta(days=self.MARKET_TREND_FILTER_DAYS)
 
         start_year = prefetch_start_date.year
         end_year = end_date.year
@@ -686,7 +686,25 @@ class pandas_algo_turtle(object):
 
             target_qty_long = np.floor(equity_bod * weights[prev_idx] / curr_price)
 
-            if market_trend_filter[curr_idx] and target_qty_long > 0:
+            # Market trend filter.
+            if not market_trend_filter[curr_idx]:
+                print("[DEBUG]  Market trend down: {} Not buying {}.".format(
+                    curr_date,
+                    curr_symbol,
+                ))
+
+            elif target_qty_long == 0:
+                print("------------------------------------------------")
+                print("[WARNING] Buying symbol {} with target quantity 0 on {}. ({} * {} / {})".format(
+                    curr_symbol,
+                    curr_date,
+                    equity_bod,
+                    weights[prev_idx],
+                    curr_price
+                ))
+                print("------------------------------------------------")
+
+            elif target_qty_long > 0:
 
                 # Initialize columns.
                 cashflow[curr_idx] = 0 if np.isnan(cashflow[curr_idx]) else cashflow[curr_idx]
@@ -744,12 +762,9 @@ class pandas_algo_turtle(object):
 
             else:
                 print("------------------------------------------------")
-                print("[WARNING] Buying symbol {} with target quantity 0 on {}. ({} * {} / {})".format(
+                print("[ERROR] Unexpected buying condition for {} on {}".format(
                     curr_symbol,
                     curr_date,
-                    equity_bod,
-                    weights[prev_idx],
-                    curr_price
                 ))
                 print("------------------------------------------------")
 
@@ -814,8 +829,16 @@ class pandas_algo_turtle(object):
             target_qty_long = np.floor(equity_bod * weights[prev_idx] / curr_price)
             delta_qty_long = target_qty_long - qty_long[curr_idx]
 
+            # Market trend filter.
+            if not market_trend_filter[curr_idx]:
+                print("[DEBUG]  Market trend down: {} Not buying {}.".format(
+                    curr_date,
+                    curr_symbol,
+                ))
+                return curr_cash, curr_equity, curr_account_pnl
+
             # Add to position.
-            if market_trend_filter[curr_idx] and delta_qty_long > 0:
+            if delta_qty_long > 0:
 
                 # Trade columns.
                 cashflow[curr_idx] -= curr_price * delta_qty_long
