@@ -260,7 +260,7 @@ class pandas_algo_turtle(object):
         df_index.rename(columns={'split_adjusted_close': 'index_close'}, inplace=True)
         df_index.set_index('date', inplace=True)
         df_index['index_close_sma'] = df_index.index_close.rolling(self.MARKET_TREND_FILTER_DAYS).mean()
-        df_index['market_trend_filter'] = df_index.index_close > df_index.index_close_sma
+        df_index['market_trend_filter'] = (df_index.index_close > df_index.index_close_sma).astype(int)
         df_list = [ df.join(df_index, on='date') for df in df_list ]
 
         #--------------------------------------------------------------------------
@@ -1163,16 +1163,16 @@ class pandas_algo_turtle(object):
         # Disqualify filter.
         #--------------------------------------------------------------------------
         # Disqualify symbols trading under $1.00.
-        df_symbol["disqualify_penny"] = df_symbol["split_adjusted_close"] < self.PENNY_PRICE
+        df_symbol["disqualify_penny"] = (df_symbol["split_adjusted_close"] < self.PENNY_PRICE).astype(int)
 
         # Disqualify symbols trading above $1000.00.
-        df_symbol["disqualify_expensive"] = df_symbol["split_adjusted_close"] > self.EXPENSIVE_PRICE
+        df_symbol["disqualify_expensive"] = (df_symbol["split_adjusted_close"] > self.EXPENSIVE_PRICE).astype(int)
 
         # Disqualify symbols with a single day move exceeding 15% in the past 90 days.
-        df_symbol["disqualify_volatile"] = df_symbol["abs_pct_rolling_max"] > self.SINGLE_DAY_VOLATILITY_FILTER_PCT
+        df_symbol["disqualify_volatile"] = (df_symbol["abs_pct_rolling_max"] > self.SINGLE_DAY_VOLATILITY_FILTER_PCT).astype(int)
 
         # Disqualify symbols with 0 standard deviation.
-        df_symbol["disqualify_stale"] = df_symbol["std"] == 0
+        df_symbol["disqualify_stale"] = (df_symbol["std"] == 0).astype(int)
 
         return df_symbol
 
@@ -1304,10 +1304,10 @@ class pandas_algo_turtle(object):
         # Rank only qualified stocks.
         # df["turtle_rank"] = df.where(~df.disqualify_penny & ~df.disqualify_volatile).groupby("date")["momentum_score"].rank(ascending=False)
         df["turtle_rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(
-            ~df.disqualify_penny
-            & ~df.disqualify_expensive
-            & ~df.disqualify_volatile
-            & ~df.disqualify_stale
+            (df.disqualify_penny == 0)
+            & (df.disqualify_expensive == 0)
+            & (df.disqualify_volatile == 0)
+            & (df.disqualify_stale == 0)
         ).groupby("date")["momentum_score"].rank(ascending=False)
 
         # Rank all stocks.
