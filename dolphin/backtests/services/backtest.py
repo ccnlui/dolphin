@@ -4,7 +4,11 @@
 #       Brief: Backtest app.
 # Requirement: Python 3.8
 
-from backtests.services.market_data import get_symbol_list_daily_split_adjusted_df_list, get_daily_split_adjusted_df
+from backtests.services.market_data import (
+    get_symbol_list_daily_split_adjusted_df_list,
+    get_daily_split_adjusted_df,
+    get_sp500_symbols_list,
+)
 from backtests.constants import cboe_holidays
 
 from numba import jit
@@ -108,10 +112,12 @@ class pandas_algo_turtle(object):
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
-        self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        self.symbol_universe.sort()
-        if "raw" in self.symbol_universe:
-            self.symbol_universe.remove('raw')
+        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
+        # self.symbol_universe.sort()
+        # if "raw" in self.symbol_universe:
+        #     self.symbol_universe.remove('raw')
+
+        self.symbol_universe = get_sp500_symbols_list()
 
         self.curr_split_factor = None
 
