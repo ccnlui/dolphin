@@ -29,7 +29,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Simulate trading only.
     #--------------------------------------------------------------------------
-    # turtle.load_market_data_from_csv("/home/calvin/source/dolphin/csv/temp/algo_turtle_indicators.csv")
+    # turtle.load_market_data_from_csv("/home/calvin/source/dolphin/csv/algo_turtle_indicators.csv")
     # turtle.backtest_turtle_rules(turtle.START_DATE, turtle.END_DATE)
     # # turtle.df.to_csv("{}/algo_turtle.csv".format(turtle.CSV_ROOT_PATH), index=False)
     # df = turtle.df
