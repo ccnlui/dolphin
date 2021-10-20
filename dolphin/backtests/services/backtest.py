@@ -104,14 +104,14 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
+        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
-        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        # self.symbol_universe.sort()
-        # if "raw" in self.symbol_universe:
-        #     self.symbol_universe.remove('raw')
+        self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
+        self.symbol_universe.sort()
+        if "raw" in self.symbol_universe:
+            self.symbol_universe.remove('raw')
 
         self.curr_split_factor = None
 
@@ -547,8 +547,8 @@ class pandas_algo_turtle(object):
                 return False
 
             # Entry level.
-            # if True:
-            if curr_price >= close_entry_rolling_max[prev_idx]:
+            if True:
+            # if curr_price >= close_entry_rolling_max[prev_idx]:
                 return True
 
             return False
@@ -562,8 +562,8 @@ class pandas_algo_turtle(object):
                 return False
 
             # Exit level.
-            # if False:
-            if curr_price <= close_exit_rolling_min[prev_idx]:
+            if False:
+            # if curr_price <= close_exit_rolling_min[prev_idx]:
                 return True
 
             # Stop loss.

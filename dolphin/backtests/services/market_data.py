@@ -33,7 +33,8 @@ def get_daily_split_adjusted_df(symbol, start_date_str, end_date_str):
     db_passwd = config["MariaDB"]["db_passwd"]
 
     try:
-        connection = connect(host="localhost", user=db_user, passwd=db_passwd, database="alpha_vantage")
+        # connection = connect(host="localhost", user=db_user, passwd=db_passwd, database="alpha_vantage")
+        connection = connect(host="localhost", user=db_user, passwd=db_passwd)
     except Error as e:
         print("[ERROR] {}".format(e))
 
@@ -43,9 +44,49 @@ def get_daily_split_adjusted_df(symbol, start_date_str, end_date_str):
     #--------------------------------------------------------------------------
     # Read from database.
     #--------------------------------------------------------------------------
+    # sql_query = """
+    #     SELECT
+    #         timestamp,
+    #         symbol,
+    #         open,
+    #         high,
+    #         low,
+    #         close,
+    #         adjusted_close,
+    #         volume,
+    #         dividend_amount,
+    #         split_coefficient,
+    #         EXISTS(
+    #             SELECT 1
+    #             FROM sp500.membership m
+    #             WHERE
+    #                 m.start_date <= da.timestamp
+    #                 AND ( m.end_date IS NULL or da.timestamp < m.end_date )
+    #         ) AS in_sp500
+    #     FROM alpha_vantage.daily_adjusted da
+    #     WHERE symbol = "{}" AND "{}" <= timestamp AND timestamp <= "{}"
+    # """.format(symbol, start_date_str, end_date_str)
     sql_query = """
-        SELECT timestamp, symbol, open, high, low, close, adjusted_close, volume, dividend_amount, split_coefficient FROM daily_adjusted
-        WHERE symbol = "{}" AND "{}" <= timestamp AND timestamp <= "{}"
+        SELECT
+            da.timestamp,
+            da.symbol,
+            da.open,
+            da.high,
+            da.low,
+            da.close,
+            da.adjusted_close,
+            da.volume,
+            da.dividend_amount,
+            da.split_coefficient,
+            m.start_date in_sp500_start,
+            m.end_date in_sp500_end
+        FROM alpha_vantage.daily_adjusted da
+        LEFT JOIN sp500.membership m
+        ON
+            da.symbol = m.symbol
+            AND m.start_date <= da.timestamp
+            AND (m.end_date IS NULL OR da.timestamp < m.end_date)
+        WHERE da.symbol = "{}" AND "{}" <= da.timestamp AND da.timestamp <= "{}"
     """.format(symbol, start_date_str, end_date_str)
     cursor.execute(sql_query)
     result = cursor.fetchall()
@@ -53,7 +94,7 @@ def get_daily_split_adjusted_df(symbol, start_date_str, end_date_str):
     #--------------------------------------------------------------------------
     # Create dataframe.
     #--------------------------------------------------------------------------
-    df = pd.DataFrame(result, columns=["timestamp", "symbol", "open", "high", "low", "close", "adjusted_close", "volume", "dividend_amount", "split_coefficient"])
+    df = pd.DataFrame(result, columns=["timestamp", "symbol", "open", "high", "low", "close", "adjusted_close", "volume", "dividend_amount", "split_coefficient", "in_sp500_start", "in_sp500_end"])
 
     #--------------------------------------------------------------------------
     # Calculate split-adjusted close.
@@ -69,7 +110,7 @@ def get_daily_split_adjusted_df(symbol, start_date_str, end_date_str):
         df["split_adjusted_close"] = df.close / df.split_coefficient_inv_cum
 
         # Keep useful columns, drop the rest.
-        df = df.loc[:, ["timestamp", "symbol", "split_adjusted_open", "split_adjusted_high", "split_adjusted_low", "split_adjusted_close"]]
+        df = df.loc[:, ["timestamp", "symbol", "split_adjusted_open", "split_adjusted_high", "split_adjusted_low", "split_adjusted_close", "in_sp500_start", "in_sp500_end"]]
 
         # Rename column timestamp to date.
         df = df.rename(columns={"timestamp": "date"})
