@@ -130,3 +130,40 @@ def get_symbol_list_daily_split_adjusted_df_list(symbol_list, start_date_str, en
             df_list.append(df_symbol)
 
     return df_list
+
+
+def get_sp500_symbols_list():
+
+    print("[{}] [INFO] Get all symbols ever been in sp500...")
+
+    #--------------------------------------------------------------------------
+    # Connect to MariaDB.
+    #--------------------------------------------------------------------------
+    config = configparser.ConfigParser()
+    config.read(CREDENTIALS_FULLPATH)
+    db_user = config["MariaDB"]["db_user"]
+    db_passwd = config["MariaDB"]["db_passwd"]
+
+    try:
+        # connection = connect(host="localhost", user=db_user, passwd=db_passwd, database="alpha_vantage")
+        connection = connect(host="localhost", user=db_user, passwd=db_passwd)
+    except Error as e:
+        print("[ERROR] {}".format(e))
+
+    # Cursor is used to execute SQL statements.
+    cursor = connection.cursor()
+
+    #--------------------------------------------------------------------------
+    # Read from database.
+    #--------------------------------------------------------------------------
+    sql_query = "SELECT DISTINCT symbol FROM sp500.membership;"
+    cursor.execute(sql_query)
+    result = cursor.fetchall()
+
+    # Flatten list of tuples.
+    result = [ symbol for row in result for symbol in row ]
+    
+    if not result:
+        print("[{}] [WARNING] sp500 list is empty.")
+
+    return result
