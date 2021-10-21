@@ -47,15 +47,16 @@ class pandas_algo_turtle(object):
     #--------------------------------------------------------------------------
     TURTLE_PERIOD_ENTRY = 20
     TURTLE_PERIOD_EXIT = 10
-    ATR_PERIOD = 20
-    VOL_PERIOD = 20
-    MOMENTUM_WINDOW = 125
-    YEARLY_TRADING_DAYS = 252
-    PORTFOLIO_NUM_STOCK = 10
     SINGLE_DAY_VOLATILITY_FILTER_DAYS = 90
     SINGLE_DAY_VOLATILITY_FILTER_PCT = 15
+    ATR_PERIOD = 20
+    VOL_PERIOD = 20
+    YEARLY_TRADING_DAYS = 252
+    MOMENTUM_WINDOW = 125
+    MIN_MOMENTUM_SCORE = 40
+    PORTFOLIO_NUM_STOCK = 30
 
-    INITIAL_CAPITAL = 10000
+    INITIAL_CAPITAL = 100000
 
     # Replaced by inverse volatility.
     DOLLAR_VOL_PCT = 2
@@ -75,7 +76,6 @@ class pandas_algo_turtle(object):
 
     MARKET_TREND_FILTER_DAYS = 200
 
-    MIN_MOMENTUM_SCORE = 40
 
     #--------------------------------------------------------------------------
     # Variables.
@@ -133,7 +133,7 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         start_date = date.fromisoformat(start_date_str)
         end_date = date.fromisoformat(end_date_str)
-        prefetch_start_date = start_date - relativedelta(days=self.MARKET_TREND_FILTER_DAYS)
+        prefetch_start_date = start_date - relativedelta(months=12)
 
         start_year = prefetch_start_date.year
         end_year = end_date.year
