@@ -9,17 +9,13 @@ from collections import defaultdict
 import configparser
 from mysql.connector import connect, Error
 
-from dolphin.backtests.constants import (
-    CREDENTIALS_FULLPATH,
-    SP500_DATA_PATH,
-    SP500_DATA_FILENAME,
-)
-
 
 #------------------------------------------------------------------------------
 # Constants.
 #------------------------------------------------------------------------------
-
+CREDENTIALS_FULLPATH  = "/media/calvin/Backup Plus/backup/source/credentials/credentials.ini"
+SP500_DATA_PATH       = "/home/calvin/source/data/sp500"
+SP500_DATA_FILENAME   = "sp500_2021-10-18.csv"
 
 
 #------------------------------------------------------------------------------
