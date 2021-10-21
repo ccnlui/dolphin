@@ -6,6 +6,7 @@ from backtests.constants import (
     END_DATE,
     PORTFOLIO_NUM_STOCK,
     CSV_ROOT_PATH,
+    INTERVAL,
 )
 
 
@@ -22,19 +23,19 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Build database and simulate trading.
     #--------------------------------------------------------------------------
-    turtle.load_market_data_from_db(turtle.symbol_universe, pandas_algo_turtle.START_DATE, pandas_algo_turtle.END_DATE, pandas_algo_turtle.INTERVAL)
-    turtle.backtest_turtle_rules(pandas_algo_turtle.START_DATE, pandas_algo_turtle.END_DATE)
-    # turtle.df.to_csv("{}/algo_turtle.csv".format(turtle.CSV_ROOT_PATH), index=False)
+    turtle.load_market_data_from_db(turtle.symbol_universe, START_DATE, END_DATE, INTERVAL)
+    turtle.backtest_turtle_rules(START_DATE, END_DATE)
+    # turtle.df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
     df = turtle.df
-    df = df.loc[ (df.turtle_rank <= pandas_algo_turtle.PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
-    df.to_csv("{}/algo_turtle.csv".format(turtle.CSV_ROOT_PATH), index=False)
+    df = df.loc[ (df.turtle_rank <= PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
+    df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
 
     #--------------------------------------------------------------------------
     # Simulate trading only.
     #--------------------------------------------------------------------------
     # turtle.load_market_data_from_csv("/home/calvin/source/dolphin/csv/algo_turtle_indicators.csv")
     # turtle.backtest_turtle_rules(START_DATE, END_DATE)
-    # # turtle.df.to_csv("{}/algo_turtle.csv".format(turtle.CSV_ROOT_PATH), index=False)
+    # # turtle.df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
     # df = turtle.df
     # df = df.loc[ (df.turtle_rank <= PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
     # df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
