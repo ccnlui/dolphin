@@ -551,7 +551,7 @@ class pandas_algo_turtle(object):
                 return False
 
             # Minimum momentum.
-            if momentum_score[curr_idx] < pandas_algo_turtle().MIN_MOMENTUM_SCORE:
+            if momentum_score[curr_idx] < pandas_algo_turtle.MIN_MOMENTUM_SCORE:
                 return False
 
             # Not rank.

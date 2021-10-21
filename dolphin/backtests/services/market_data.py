@@ -134,7 +134,8 @@ def get_symbol_list_daily_split_adjusted_df_list(symbol_list, start_date_str, en
 
 def get_sp500_symbols_list():
 
-    print("[{}] [INFO] Get all symbols ever been in sp500...")
+    print("[INFO] Get all symbols ever been in sp500...")
+    import ipdb; ipdb.set_trace()
 
     #--------------------------------------------------------------------------
     # Connect to MariaDB.
