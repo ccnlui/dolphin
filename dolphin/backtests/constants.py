@@ -60,8 +60,9 @@ LISTING_ROOT_PATH     = "/home/calvin/source/data/alpha_vantage/backup/2021-01-1
 GRAPH_ROOT_PATH       = "/home/calvin/source/dolphin/graph"
 LOG_ROOT_PATH         = "/home/calvin/source/dolphin/log"
 CSV_ROOT_PATH         = "/home/calvin/source/dolphin/csv"
-
-CREDENTIALS_FULLPATH = "/media/calvin/Backup Plus/backup/source/credentials/credentials.ini"
+SP500_DATA_PATH       = "/home/calvin/source/data/sp500"
+SP500_DATA_FILENAME   = "sp500_2021-10-18.csv"
+CREDENTIALS_FULLPATH  = "/media/calvin/Backup Plus/backup/source/credentials/credentials.ini"
 
 #--------------------------------------------------------------------------
 # Holidays

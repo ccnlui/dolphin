@@ -19,6 +19,9 @@ from dolphin.backtests.constants import (
     SYMBOL_UNIVERSE_PATH,
     CREDENTIALS_FULLPATH,
     PREFETCH_NUM_MONTH,
+    START_DATE,
+    END_DATE,
+    INTERVAL,
 )
 
 #------------------------------------------------------------------------------
@@ -207,4 +210,4 @@ def generate_daily_adjusted_database(symbol_universe_path, start_date_str, end_d
 #------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    generate_daily_adjusted_database(SYMBOL_UNIVERSE_PATH, "2010-01-01", "2020-12-31", "1day", True)
+    generate_daily_adjusted_database(SYMBOL_UNIVERSE_PATH, START_DATE, END_DATE, INTERVAL, True)
