@@ -40,63 +40,32 @@ import multiprocessing as mp
 import csv
 import bisect
 
+from backtests.constants import (
+    ATR_PERIOD,
+    ATR_SMOOTHING_FACTOR,
+    BASIS_POINT_DP,
+    CSV_ROOT_PATH,
+    EXPENSIVE_PRICE,
+    EXP_MODEL_GUESS_A,
+    EXP_MODEL_GUESS_B,
+    INITIAL_CAPITAL,
+    MARKET_DATA_ROOT_PATH,
+    MARKET_TREND_FILTER_DAYS,
+    MIN_MOMENTUM_SCORE,
+    MOMENTUM_WINDOW,
+    PENNY_PRICE,
+    PORTFOLIO_NUM_STOCK,
+    PREFETCH_NUM_MONTH,
+    SINGLE_DAY_VOLATILITY_FILTER_DAYS,
+    SINGLE_DAY_VOLATILITY_FILTER_PCT,
+    START_DATE,
+    END_DATE,
+    TURTLE_PERIOD_ENTRY,
+    TURTLE_PERIOD_EXIT,
+    VOL_PERIOD,
+)
 
 class pandas_algo_turtle(object):
-    #--------------------------------------------------------------------------
-    # Parameters.
-    #--------------------------------------------------------------------------
-    TURTLE_PERIOD_ENTRY = 20
-    TURTLE_PERIOD_EXIT = 10
-    SINGLE_DAY_VOLATILITY_FILTER_DAYS = 90
-    SINGLE_DAY_VOLATILITY_FILTER_PCT = 15
-    ATR_PERIOD = 20
-    VOL_PERIOD = 20
-    YEARLY_TRADING_DAYS = 252
-    MOMENTUM_WINDOW = 125
-    MIN_MOMENTUM_SCORE = 40
-    PORTFOLIO_NUM_STOCK = 30
-
-    INITIAL_CAPITAL = 100000
-
-    # Replaced by inverse volatility.
-    DOLLAR_VOL_PCT = 2
-
-    # Exponential model: y = a * exp(b*x)
-    EXP_MODEL_GUESS_A = 4
-    EXP_MODEL_GUESS_B = 0.1
-
-    # Round ATR.
-    MODEL_PRECISION = 4
-
-    # Round std. Minimum is 1%.
-    BASIS_POINT_DP = 2
-
-    PENNY_PRICE = 1
-    EXPENSIVE_PRICE = 10000
-
-    MARKET_TREND_FILTER_DAYS = 200
-
-
-    #--------------------------------------------------------------------------
-    # Variables.
-    #--------------------------------------------------------------------------
-    START_DATE = "2010-01-01"
-    END_DATE = "2020-12-31"
-    INTERVAL = "1day"
-
-    #--------------------------------------------------------------------------
-    # Constants.
-    #--------------------------------------------------------------------------
-    MARKET_DATA_ROOT_PATH = "/home/calvin/source/data/alpha_vantage/backup/2021-01-16/data"
-    LISTING_ROOT_PATH     = "/home/calvin/source/data/alpha_vantage/backup/2021-01-16/listing"
-    GRAPH_ROOT_PATH       = "/home/calvin/source/dolphin/graph"
-    LOG_ROOT_PATH         = "/home/calvin/source/dolphin/log"
-    CSV_ROOT_PATH         = "/home/calvin/source/dolphin/csv"
-
-    REGULAR_TRADING_HOURS_START_TIME = time.fromisoformat("09:30:00")
-    REGULAR_TRADING_HOURS_END_TIME = time.fromisoformat("16:00:00")
-
-    ATR_SMOOTHING_FACTOR = 1 / ATR_PERIOD
 
     #--------------------------------------------------------------------------
     # Constructor.
@@ -117,12 +86,7 @@ class pandas_algo_turtle(object):
         #     self.symbol_universe.remove('raw')
 
         self.symbol_universe = get_sp500_symbols_list()
-
-        self.curr_split_factor = None
-
         self.df = None
-
-        return
 
     #--------------------------------------------------------------------------
     # Methods.
@@ -133,7 +97,7 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         start_date = date.fromisoformat(start_date_str)
         end_date = date.fromisoformat(end_date_str)
-        prefetch_start_date = start_date - relativedelta(months=12)
+        prefetch_start_date = start_date - relativedelta(months=PREFETCH_NUM_MONTH)
 
         start_year = prefetch_start_date.year
         end_year = end_date.year
@@ -163,7 +127,7 @@ class pandas_algo_turtle(object):
                     # Check if historical data exists.
                     #------------------------------------------------------------------
                     symbol_data_filepath = "{}/{}/{}/Alpha_Vantage_{}_{}_{}_adjusted.csv".format(
-                                            self.MARKET_DATA_ROOT_PATH,
+                                            MARKET_DATA_ROOT_PATH,
                                             symbol,
                                             interval,
                                             symbol,
@@ -246,7 +210,7 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         start_date = date.fromisoformat(start_date_str)
         end_date = date.fromisoformat(end_date_str)
-        prefetch_start_date = start_date - relativedelta(months=6)
+        prefetch_start_date = start_date - relativedelta(months=PREFETCH_NUM_MONTH)
 
         #----------------------------------------------------------------------
         # Read raw daily adjusted from database.
@@ -261,7 +225,7 @@ class pandas_algo_turtle(object):
         df_index = df_index.loc[ :, ['date', 'split_adjusted_close']]
         df_index.rename(columns={'split_adjusted_close': 'index_close'}, inplace=True)
         df_index.set_index('date', inplace=True)
-        df_index['index_close_sma'] = df_index.index_close.rolling(self.MARKET_TREND_FILTER_DAYS).mean()
+        df_index['index_close_sma'] = df_index.index_close.rolling(MARKET_TREND_FILTER_DAYS).mean()
         df_index['market_trend_filter'] = (df_index.index_close > df_index.index_close_sma).astype(int)
         df_list = [ df.join(df_index, on='date') for df in df_list ]
 
@@ -291,7 +255,7 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Write to csv.
         #--------------------------------------------------------------------------
-        self.df.to_csv("{}/algo_turtle_indicators.csv".format(self.CSV_ROOT_PATH), index=False)
+        self.df.to_csv("{}/algo_turtle_indicators.csv".format(CSV_ROOT_PATH), index=False)
 
         return
 
@@ -317,7 +281,7 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         start_date = date.fromisoformat(start_date_str)
         end_date = date.fromisoformat(end_date_str)
-        prefetch_start_date = start_date - relativedelta(months=6)
+        prefetch_start_date = start_date - relativedelta(months=PREFETCH_NUM_MONTH)
 
         curr_date = prefetch_start_date
 
@@ -332,7 +296,7 @@ class pandas_algo_turtle(object):
             #----------------------------------------------------------------------
             # Read csv file.
             #----------------------------------------------------------------------
-            listing_fullpath = "{}/{}/Alpha_Vantage_{}_listing_status.csv".format(self.LISTING_ROOT_PATH, curr_date.year, curr_date)
+            listing_fullpath = "{}/{}/Alpha_Vantage_{}_listing_status.csv".format(LISTING_ROOT_PATH, curr_date.year, curr_date)
             df_listing = pd.read_csv(listing_fullpath)
 
             # Check listing status.
@@ -352,7 +316,7 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         start_date = date.fromisoformat(start_date_str)
         end_date = date.fromisoformat(end_date_str)
-        prefetch_start_date = start_date - relativedelta(months=6)
+        prefetch_start_date = start_date - relativedelta(months=PREFETCH_NUM_MONTH)
 
         curr_date = prefetch_start_date
 
@@ -388,13 +352,13 @@ class pandas_algo_turtle(object):
         # Linear model: y = a * x + b
 
         # Requires data of previous rolling window, 125 days by default.
-        x = np.arange(pandas_algo_turtle.MOMENTUM_WINDOW)
+        x = np.arange(MOMENTUM_WINDOW)
 
         #----------------------------------------------------------------------
         # Sanity check: Scipy curve fit.
         #----------------------------------------------------------------------
         try:
-            popt, pcov = curve_fit(lambda x, a, b: a*np.exp(b*x), x, time_series, p0=(pandas_algo_turtle.EXP_MODEL_GUESS_A, pandas_algo_turtle.EXP_MODEL_GUESS_B))
+            popt, pcov = curve_fit(lambda x, a, b: a*np.exp(b*x), x, time_series, p0=(EXP_MODEL_GUESS_A, EXP_MODEL_GUESS_B))
             a = popt[0]
             b = popt[1]
             fitted_curve = lambda x: a*np.exp(b*x)
@@ -439,7 +403,7 @@ class pandas_algo_turtle(object):
                 # Discard regression result where coefficient of determination is negative.
                 score = np.nan
             else:
-                score = (np.power(1+b, pandas_algo_turtle.YEARLY_TRADING_DAYS) - 1) * 100 * r2
+                score = (np.power(1+b, YEARLY_TRADING_DAYS) - 1) * 100 * r2
 
             #----------------------------------------------------------------------
             # Sanity check: Animate the change of curve.
@@ -546,7 +510,7 @@ class pandas_algo_turtle(object):
                 return False
 
             # Minimum momentum.
-            if momentum_score[curr_idx] < pandas_algo_turtle.MIN_MOMENTUM_SCORE:
+            if momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
                 return False
 
             # Not rank.
@@ -577,15 +541,15 @@ class pandas_algo_turtle(object):
                 return True
 
             # Minimum momentum.
-            if momentum_score[curr_idx] < pandas_algo_turtle.MIN_MOMENTUM_SCORE:
+            if momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
                 return True
 
             # Penny stock.
-            if curr_price < pandas_algo_turtle.PENNY_PRICE:
+            if curr_price < PENNY_PRICE:
                 return True
 
             # Expensive stock.
-            if curr_price > pandas_algo_turtle.EXPENSIVE_PRICE:
+            if curr_price > EXPENSIVE_PRICE:
                 return True
 
             # Not rank.
@@ -1113,12 +1077,12 @@ class pandas_algo_turtle(object):
         # Calculate rolling max/min of close.
         #--------------------------------------------------------------------------
         # Exit.
-        df_symbol["close_exit_rolling_max" ] = df_symbol["split_adjusted_close"].rolling(self.TURTLE_PERIOD_EXIT).max()
-        df_symbol["close_exit_rolling_min" ] = df_symbol["split_adjusted_close"].rolling(self.TURTLE_PERIOD_EXIT).min()
+        df_symbol["close_exit_rolling_max" ] = df_symbol["split_adjusted_close"].rolling(TURTLE_PERIOD_EXIT).max()
+        df_symbol["close_exit_rolling_min" ] = df_symbol["split_adjusted_close"].rolling(TURTLE_PERIOD_EXIT).min()
 
         # Entry.
-        df_symbol["close_entry_rolling_max"] = df_symbol["split_adjusted_close"].rolling(self.TURTLE_PERIOD_ENTRY).max()
-        df_symbol["close_entry_rolling_min"] = df_symbol["split_adjusted_close"].rolling(self.TURTLE_PERIOD_ENTRY).min()
+        df_symbol["close_entry_rolling_max"] = df_symbol["split_adjusted_close"].rolling(TURTLE_PERIOD_ENTRY).max()
+        df_symbol["close_entry_rolling_min"] = df_symbol["split_adjusted_close"].rolling(TURTLE_PERIOD_ENTRY).min()
 
         #--------------------------------------------------------------------------
         # Calculate true range + ATR.
@@ -1136,7 +1100,7 @@ class pandas_algo_turtle(object):
         df_symbol["true_range"] = pd.concat([range_1, range_2, range_3], axis=1).max(axis=1)
 
         # Calculate ATR using exponentially moving window.
-        df_symbol["atr"] = df_symbol["true_range"].ewm(alpha=self.ATR_SMOOTHING_FACTOR, min_periods=self.ATR_PERIOD).mean()
+        df_symbol["atr"] = df_symbol["true_range"].ewm(alpha=ATR_SMOOTHING_FACTOR, min_periods=ATR_PERIOD).mean()
 
         # Inverse ATR.
         df_symbol["inv_atr"] = df_symbol["atr"].rdiv(1)
@@ -1145,9 +1109,9 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Calculate standard deviation.
         #--------------------------------------------------------------------------
-        # df_symbol["std"] = df_symbol["split_adjusted_close"].rolling(self.VOL_PERIOD).std()
-        df_symbol["std"] = df_symbol["split_adjusted_close"].pct_change().rolling(self.VOL_PERIOD).std()
-        df_symbol["std"] = df_symbol["std"].round(self.BASIS_POINT_DP)
+        # df_symbol["std"] = df_symbol["split_adjusted_close"].rolling(VOL_PERIOD).std()
+        df_symbol["std"] = df_symbol["split_adjusted_close"].pct_change().rolling(VOL_PERIOD).std()
+        df_symbol["std"] = df_symbol["std"].round(BASIS_POINT_DP)
 
         # Inverse standard deviation.
         df_symbol["inv_std"] = df_symbol["std"].rdiv(1)
@@ -1156,13 +1120,13 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Calculate rolling max of single day absolute percent change.
         #--------------------------------------------------------------------------
-        df_symbol["abs_pct_rolling_max"] = df_symbol["split_adjusted_close"].pct_change().abs().mul(100).rolling(self.SINGLE_DAY_VOLATILITY_FILTER_DAYS).max()
+        df_symbol["abs_pct_rolling_max"] = df_symbol["split_adjusted_close"].pct_change().abs().mul(100).rolling(SINGLE_DAY_VOLATILITY_FILTER_DAYS).max()
 
         #--------------------------------------------------------------------------
         # Exponential regression.
         #--------------------------------------------------------------------------
         try:
-            df_symbol["momentum_score"] = df_symbol["split_adjusted_close"].rolling(self.MOMENTUM_WINDOW).apply(pandas_algo_turtle.momentum_score, raw=True)
+            df_symbol["momentum_score"] = df_symbol["split_adjusted_close"].rolling(MOMENTUM_WINDOW).apply(pandas_algo_turtle.momentum_score, raw=True)
             df_symbol["momentum_score"] = df_symbol["momentum_score"].replace(np.inf, np.nan)
         except:
             print("[{}] [ERROR] Cannot calculate momentum score for symbol: {}.".format(datetime.now().isoformat(), df_symbol.symbol.iloc[0]))
@@ -1172,13 +1136,13 @@ class pandas_algo_turtle(object):
         # Disqualify filter.
         #--------------------------------------------------------------------------
         # Disqualify symbols trading under $1.00.
-        df_symbol["disqualify_penny"] = (df_symbol["split_adjusted_close"] < self.PENNY_PRICE).astype(int)
+        df_symbol["disqualify_penny"] = (df_symbol["split_adjusted_close"] < PENNY_PRICE).astype(int)
 
         # Disqualify symbols trading above $1000.00.
-        df_symbol["disqualify_expensive"] = (df_symbol["split_adjusted_close"] > self.EXPENSIVE_PRICE).astype(int)
+        df_symbol["disqualify_expensive"] = (df_symbol["split_adjusted_close"] > EXPENSIVE_PRICE).astype(int)
 
         # Disqualify symbols with a single day move exceeding 15% in the past 90 days.
-        df_symbol["disqualify_volatile"] = (df_symbol["abs_pct_rolling_max"] > self.SINGLE_DAY_VOLATILITY_FILTER_PCT).astype(int)
+        df_symbol["disqualify_volatile"] = (df_symbol["abs_pct_rolling_max"] > SINGLE_DAY_VOLATILITY_FILTER_PCT).astype(int)
 
         # Disqualify symbols with 0 standard deviation.
         df_symbol["disqualify_stale"] = (df_symbol["std"] == 0).astype(int)
@@ -1228,10 +1192,10 @@ class pandas_algo_turtle(object):
             momentum_score,
             turtle_rank,
             weights,
-            self.INITIAL_CAPITAL,
+            INITIAL_CAPITAL,
             start_date,
             end_date,
-            self.PORTFOLIO_NUM_STOCK
+            PORTFOLIO_NUM_STOCK
         )
 
         # Testing. Delete me.
@@ -1293,7 +1257,7 @@ class pandas_algo_turtle(object):
 
         # Calculate equity returns.
         df = df.sort_values(by=["date", "symbol"])
-        df.loc[ df.date >= start_date_str, "algo_turtle_equity" ] = df.equity.div(self.INITIAL_CAPITAL)
+        df.loc[ df.date >= start_date_str, "algo_turtle_equity" ] = df.equity.div(INITIAL_CAPITAL)
         """
 
         #--------------------------------------------------------------------------
@@ -1332,13 +1296,13 @@ class pandas_algo_turtle(object):
 
         # Testing. Delete me.
         # Bias cheap symbols.
-        # df["weights"] = df.loc[ df.turtle_rank <= self.PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_atr / group.inv_atr.sum())
+        # df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_atr / group.inv_atr.sum())
 
         # Proper.
-        df["weights"] = df.loc[ df.turtle_rank <= self.PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_std / group.inv_std.sum())
+        df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_std / group.inv_std.sum())
 
         # Equal weights.
-        # df["weights"] = df.loc[ df.turtle_rank <= self.PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.turtle_rank / group.turtle_rank  / group.shape[0])
+        # df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.turtle_rank / group.turtle_rank  / group.shape[0])
 
         #--------------------------------------------------------------------------
         # Generate symbol trading data.
@@ -1435,7 +1399,7 @@ class pandas_algo_turtle(object):
         fig.show()
 
         # Save to HTML file.
-        # fig.write_html("{}/{}_{}-{}.html".format(self.GRAPH_ROOT_PATH, self.symbol, self.start_date_str, self.end_date_str))
+        # fig.write_html("{}/{}_{}-{}.html".format(GRAPH_ROOT_PATH, self.symbol, self.start_date_str, self.end_date_str))
 
         return
 
@@ -1507,7 +1471,7 @@ class pandas_algo_turtle(object):
         fig.show()
 
         # Save to HTML file.
-        # fig.write_html("{}/{}_{}-{}.html".format(self.GRAPH_ROOT_PATH, self.symbol, self.start_date_str, self.end_date_str))
+        # fig.write_html("{}/{}_{}-{}.html".format(GRAPH_ROOT_PATH, self.symbol, self.start_date_str, self.end_date_str))
 
         return
 
@@ -1594,7 +1558,7 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Write to csv.
         #--------------------------------------------------------------------------
-        df_trade_summary.to_csv("{}/algo_turtle_trade_summary.csv".format(self.CSV_ROOT_PATH), index=False)
+        df_trade_summary.to_csv("{}/algo_turtle_trade_summary.csv".format(CSV_ROOT_PATH), index=False)
 
         #--------------------------------------------------------------------------
         # Trade statistics.
@@ -1625,7 +1589,7 @@ class pandas_algo_turtle(object):
     def generate_df_returns_one_pass(self, df, start_date_str, end_date_str):
 
         # Sanity check. Consumes more memory.
-        # df = df.loc[ df.date >= self.START_DATE ]
+        # df = df.loc[ df.date >= START_DATE ]
         # df = df.groupby(df.date, as_index=False).apply(lambda g: g.iloc[-1])
         # df["returns"] = df.equity.pct_change()
 
@@ -1676,8 +1640,8 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Calculate returns.
         #--------------------------------------------------------------------------
-        df_turtle = self.generate_df_returns_one_pass(self.df, self.START_DATE, self.END_DATE)
-        df_spy = get_daily_split_adjusted_df("SPY", self.START_DATE, self.END_DATE)
+        df_turtle = self.generate_df_returns_one_pass(self.df, START_DATE, END_DATE)
+        df_spy = get_daily_split_adjusted_df("SPY", START_DATE, END_DATE)
         df_spy["returns"] = df_spy.split_adjusted_close.pct_change()
 
         #--------------------------------------------------------------------------
@@ -1733,7 +1697,7 @@ class pandas_algo_turtle(object):
         # Create a subset dataframe if there is enough memory.
         #----------------------------------------------------------------------
         try:
-            df.loc[ df.weights > 0 ].to_csv("{}/algo_turtle_weights.csv".format(pandas_algo_turtle.CSV_ROOT_PATH), index=False)
+            df.loc[ df.weights > 0 ].to_csv("{}/algo_turtle_weights.csv".format(CSV_ROOT_PATH), index=False)
         except:
             #------------------------------------------------------------------
             # Replace NaN with empty string.
@@ -1745,7 +1709,7 @@ class pandas_algo_turtle(object):
             #------------------------------------------------------------------
             df.date = df.date.dt.strftime("%Y-%m-%d")
 
-            with open("{}/algo_turtle_weights.csv".format(pandas_algo_turtle.CSV_ROOT_PATH), 'w', newline='') as f:
+            with open("{}/algo_turtle_weights.csv".format(CSV_ROOT_PATH), 'w', newline='') as f:
 
                 # CSV writer, defaults uses "\r\n".
                 cw = csv.writer(f, lineterminator='\n')
@@ -1776,7 +1740,7 @@ class pandas_algo_turtle(object):
         # Create a subset dataframe if there is enough memory.
         #----------------------------------------------------------------------
         try:
-            df.loc[ ~df.cashflow.isna() ].to_csv("{}/algo_turtle_cashflow.csv".format(pandas_algo_turtle.CSV_ROOT_PATH), index=False)
+            df.loc[ ~df.cashflow.isna() ].to_csv("{}/algo_turtle_cashflow.csv".format(CSV_ROOT_PATH), index=False)
         except:
             #------------------------------------------------------------------
             # Replace NaN with empty string.
@@ -1788,7 +1752,7 @@ class pandas_algo_turtle(object):
             #------------------------------------------------------------------
             df.date = df.date.dt.strftime("%Y-%m-%d")
 
-            with open("{}/algo_turtle_cashflow.csv".format(pandas_algo_turtle.CSV_ROOT_PATH), 'w', newline='') as f:
+            with open("{}/algo_turtle_cashflow.csv".format(CSV_ROOT_PATH), 'w', newline='') as f:
 
                 # CSV writer, defaults uses "\r\n".
                 cw = csv.writer(f, lineterminator='\n')

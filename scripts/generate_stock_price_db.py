@@ -15,11 +15,11 @@ from dateutil.relativedelta import relativedelta
 import plotly.express as px
 import os
 
-#------------------------------------------------------------------------------
-# Constants.
-#------------------------------------------------------------------------------
-SYMBOL_UNIVERSE_PATH = "/home/calvin/source/data/alpha_vantage/backup/2021-01-16/data"
-CREDENTIALS_FULLPATH = "/media/calvin/Backup Plus/backup/source/credentials/credentials.ini"
+from dolphin.backtests.constants import (
+    SYMBOL_UNIVERSE_PATH,
+    CREDENTIALS_FULLPATH,
+    PREFETCH_NUM_MONTH,
+)
 
 #------------------------------------------------------------------------------
 # Functions.
@@ -30,7 +30,7 @@ def generate_daily_adjusted_database(symbol_universe_path, start_date_str, end_d
     #----------------------------------------------------------------------
     start_date = date.fromisoformat(start_date_str)
     end_date = date.fromisoformat(end_date_str)
-    prefetch_start_date = start_date - relativedelta(months=6)
+    prefetch_start_date = start_date - relativedelta(months=PREFETCH_NUM_MONTH)
 
     start_year = prefetch_start_date.year
     end_year = end_date.year
