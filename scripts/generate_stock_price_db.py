@@ -15,14 +15,15 @@ from dateutil.relativedelta import relativedelta
 import plotly.express as px
 import os
 
-from ..constants import (
-    SYMBOL_UNIVERSE_PATH,
-    CREDENTIALS_FULLPATH,
-    PREFETCH_NUM_MONTH,
-    START_DATE,
-    END_DATE,
-    INTERVAL,
-)
+#------------------------------------------------------------------------------
+# Constants.
+#------------------------------------------------------------------------------
+MARKET_DATA_ROOT_PATH = "/home/calvin/source/data/alpha_vantage/backup/2021-01-16/data"
+CREDENTIALS_FULLPATH  = "/media/calvin/Backup Plus/backup/source/credentials/credentials.ini"
+PREFETCH_NUM_MONTH = 12
+START_DATE = "2010-01-01"
+END_DATE = "2020-12-31"
+INTERVAL = "1day"
 
 #------------------------------------------------------------------------------
 # Functions.
@@ -139,7 +140,7 @@ def generate_daily_adjusted_database(symbol_universe_path, start_date_str, end_d
                 # Check if historical data exists.
                 #--------------------------------------------------------------
                 symbol_data_filepath = "{}/{}/{}/Alpha_Vantage_{}_{}_{}_adjusted.csv".format(
-                                        SYMBOL_UNIVERSE_PATH,
+                                        MARKET_DATA_ROOT_PATH,
                                         symbol,
                                         interval,
                                         symbol,
@@ -210,4 +211,4 @@ def generate_daily_adjusted_database(symbol_universe_path, start_date_str, end_d
 #------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    generate_daily_adjusted_database(SYMBOL_UNIVERSE_PATH, START_DATE, END_DATE, INTERVAL, True)
+    generate_daily_adjusted_database(MARKET_DATA_ROOT_PATH, START_DATE, END_DATE, INTERVAL, True)
