@@ -1314,6 +1314,7 @@ class pandas_algo_turtle(object):
             & (df.disqualify_expensive == 0)
             & (df.disqualify_volatile == 0)
             & (df.disqualify_stale == 0)
+            & (~df.in_sp500_start.isna())
         ).groupby("date")["momentum_score"].rank(ascending=False)
 
         # Rank all stocks.
