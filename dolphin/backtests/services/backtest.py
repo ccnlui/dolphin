@@ -71,7 +71,7 @@ class pandas_algo_turtle(object):
     BASIS_POINT_DP = 2
 
     PENNY_PRICE = 1
-    EXPENSIVE_PRICE = 1000
+    EXPENSIVE_PRICE = 10000
 
     MARKET_TREND_FILTER_DAYS = 200
 
@@ -558,7 +558,7 @@ class pandas_algo_turtle(object):
             if np.isnan(turtle_rank[prev_idx]) or turtle_rank[prev_idx] > portfolio_num_stock:
                 return False
 
-            # Entry level.
+            # Turtle entry.
             if True:
             # if curr_price >= close_entry_rolling_max[prev_idx]:
                 return True
@@ -573,12 +573,10 @@ class pandas_algo_turtle(object):
             if cnt_long[curr_idx] == 0:
                 return False
 
-            # Exit level.
+            # Turtle exit and stop loss.
             if False:
             # if curr_price <= close_exit_rolling_min[prev_idx]:
                 return True
-
-            # Stop loss.
             if False:
             # if curr_price <= stop_loss[prev_idx]:
                 return True
