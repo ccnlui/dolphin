@@ -23,7 +23,7 @@ if __name__ == '__main__':
     # turtle.backtest_turtle_rules(pandas_algo_turtle.START_DATE, pandas_algo_turtle.END_DATE)
     # # turtle.df.to_csv("{}/algo_turtle.csv".format(turtle.CSV_ROOT_PATH), index=False)
     # df = turtle.df
-    # df = df.loc[ (df.turtle_rank <= 10) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
+    # df = df.loc[ (df.turtle_rank <= pandas_algo_turtle.PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
     # df.to_csv("{}/algo_turtle.csv".format(turtle.CSV_ROOT_PATH), index=False)
 
     #--------------------------------------------------------------------------
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     turtle.backtest_turtle_rules(turtle.START_DATE, turtle.END_DATE)
     # turtle.df.to_csv("{}/algo_turtle.csv".format(turtle.CSV_ROOT_PATH), index=False)
     df = turtle.df
-    df = df.loc[ (df.turtle_rank <= 10) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
+    df = df.loc[ (df.turtle_rank <= pandas_algo_turtle.PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
     df.to_csv("{}/algo_turtle.csv".format(turtle.CSV_ROOT_PATH), index=False)
 
     #--------------------------------------------------------------------------
