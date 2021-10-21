@@ -84,8 +84,6 @@ class pandas_algo_turtle(object):
     END_DATE = "2020-12-31"
     INTERVAL = "1day"
 
-    VERBOSE = True
-
     #--------------------------------------------------------------------------
     # Constants.
     #--------------------------------------------------------------------------
@@ -121,9 +119,6 @@ class pandas_algo_turtle(object):
         self.symbol_universe = get_sp500_symbols_list()
 
         self.curr_split_factor = None
-
-        self.curr_date = None
-        self.prev_date = None
 
         self.df = None
 
@@ -1121,7 +1116,6 @@ class pandas_algo_turtle(object):
         df_symbol["close_exit_rolling_max" ] = df_symbol["split_adjusted_close"].rolling(self.TURTLE_PERIOD_EXIT).max()
         df_symbol["close_exit_rolling_min" ] = df_symbol["split_adjusted_close"].rolling(self.TURTLE_PERIOD_EXIT).min()
 
-
         # Entry.
         df_symbol["close_entry_rolling_max"] = df_symbol["split_adjusted_close"].rolling(self.TURTLE_PERIOD_ENTRY).max()
         df_symbol["close_entry_rolling_min"] = df_symbol["split_adjusted_close"].rolling(self.TURTLE_PERIOD_ENTRY).min()
@@ -1319,14 +1313,14 @@ class pandas_algo_turtle(object):
         print("[{}] [INFO] Ranking qualified stock universe by momentum...".format(datetime.now().isoformat()))
 
         # Rank only qualified stocks.
-        # df["turtle_rank"] = df.where(~df.disqualify_penny & ~df.disqualify_volatile).groupby("date")["momentum_score"].rank(ascending=False)
-        df["turtle_rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(
-            (df.disqualify_penny == 0)
-            & (df.disqualify_expensive == 0)
-            & (df.disqualify_volatile == 0)
-            & (df.disqualify_stale == 0)
-            & (~df.in_sp500_start.isna())
-        ).groupby("date")["momentum_score"].rank(ascending=False)
+        df["turtle_rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(~df.in_sp500_start.isna()).groupby("date")["momentum_score"].rank(ascending=False)
+        # df["turtle_rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(
+        #     (df.disqualify_penny == 0)
+        #     & (df.disqualify_expensive == 0)
+        #     & (df.disqualify_volatile == 0)
+        #     & (df.disqualify_stale == 0)
+        #     & (~df.in_sp500_start.isna())
+        # ).groupby("date")["momentum_score"].rank(ascending=False)
 
         # Rank all stocks.
         # df["turtle_rank"] = df.groupby("date")["momentum_score"].rank(ascending=False)
