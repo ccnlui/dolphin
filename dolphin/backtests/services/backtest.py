@@ -73,8 +73,9 @@ class pandas_algo_turtle(object):
     PENNY_PRICE = 1
     EXPENSIVE_PRICE = 1000
 
-    # Market trend.
     MARKET_TREND_FILTER_DAYS = 200
+
+    MIN_MOMENTUM_SCORE = 40
 
     #--------------------------------------------------------------------------
     # Variables.
@@ -477,6 +478,7 @@ class pandas_algo_turtle(object):
         close_exit_rolling_min,
         market_trend_filter,
         atr,
+        momentum_score,
         turtle_rank,
         weights,
         initial_capital,
@@ -548,6 +550,10 @@ class pandas_algo_turtle(object):
             if not np.isnan(trade_id[curr_idx]):
                 return False
 
+            # Minimum momentum.
+            if momentum_score[curr_idx] < pandas_algo_turtle().MIN_MOMENTUM_SCORE:
+                return False
+
             # Not rank.
             if np.isnan(turtle_rank[prev_idx]) or turtle_rank[prev_idx] > portfolio_num_stock:
                 return False
@@ -573,7 +579,12 @@ class pandas_algo_turtle(object):
                 return True
 
             # Stop loss.
-            if curr_price <= stop_loss[prev_idx]:
+            if False:
+            # if curr_price <= stop_loss[prev_idx]:
+                return True
+
+            # Minimum momentum.
+            if momentum_score[curr_idx] < pandas_algo_turtle().MIN_MOMENTUM_SCORE:
                 return True
 
             # Penny stock.
@@ -1208,6 +1219,7 @@ class pandas_algo_turtle(object):
         close_exit_rolling_min = df.close_exit_rolling_min.values
         market_trend_filter = df.market_trend_filter.values
         atr = df.atr.values
+        momentum_score = df.momentum_score.values
         turtle_rank = df.turtle_rank.values
         weights = df.weights.values
 
@@ -1221,6 +1233,7 @@ class pandas_algo_turtle(object):
             close_exit_rolling_min,
             market_trend_filter,
             atr,
+            momentum_score,
             turtle_rank,
             weights,
             self.INITIAL_CAPITAL,
