@@ -4,7 +4,7 @@
 #       Brief: Constants used by backtest app.
 
 
-from datetime import date
+from datetime import date, time
 
 #--------------------------------------------------------------------------
 # Turtle algo parameters.
