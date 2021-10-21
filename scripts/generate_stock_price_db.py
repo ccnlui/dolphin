@@ -211,4 +211,4 @@ def generate_daily_adjusted_database(symbol_universe_path, start_date_str, end_d
 #------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    generate_daily_adjusted_database(MARKET_DATA_ROOT_PATH, START_DATE, END_DATE, INTERVAL, True)
+    generate_daily_adjusted_database(MARKET_DATA_ROOT_PATH, START_DATE, END_DATE, INTERVAL, overwrite=True)
