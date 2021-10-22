@@ -76,8 +76,8 @@ class pandas_algo_turtle(object):
         # Members.
         #----------------------------------------------------------------------
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
-        # self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
+        self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
+        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
         # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
         # self.symbol_universe = ["CODA"]
 
@@ -571,6 +571,10 @@ class pandas_algo_turtle(object):
 
 
         def liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, curr_cash, curr_equity, curr_account_pnl, prev_watchlist):
+            """
+            Assume position was liquidated at the previous close if symbol is not available for trading today.
+            Run every day.
+            """
 
             # Don't change previous entry.
             prev_idx = symbol_prev_idx[curr_symbol]
@@ -603,21 +607,25 @@ class pandas_algo_turtle(object):
 
 
         def mark_to_market(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl):
+            """
+            Mark to market at every tick.
+            """
 
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
 
-            # Carry over if at open.
-            trade_id[curr_idx] = trade_id[prev_idx] if np.isnan(trade_id[curr_idx]) else trade_id[curr_idx]
-            cnt_long[curr_idx] = cnt_long[prev_idx] if np.isnan(cnt_long[curr_idx]) else cnt_long[curr_idx]
-            qty_long[curr_idx] = qty_long[prev_idx] if np.isnan(qty_long[curr_idx]) else qty_long[curr_idx]
-            stop_loss[curr_idx] = stop_loss[prev_idx] if np.isnan(stop_loss[curr_idx]) else stop_loss[curr_idx]
-            last_fill[curr_idx] = last_fill[prev_idx] if np.isnan(last_fill[curr_idx]) else last_fill[curr_idx]
-            avg_price[curr_idx] = avg_price[prev_idx] if np.isnan(avg_price[curr_idx]) else avg_price[curr_idx]
-            cashflow[curr_idx] = 0 if np.isnan(cashflow[curr_idx]) else cashflow[curr_idx]
-            book_value[curr_idx] = book_value[prev_idx] if np.isnan(book_value[curr_idx]) else book_value[curr_idx]
-            market_value[curr_idx] = market_value[prev_idx] if np.isnan(market_value[curr_idx]) else market_value[curr_idx]
-            trade_pnl[curr_idx] = trade_pnl[prev_idx] if np.isnan(trade_pnl[curr_idx]) else trade_pnl[curr_idx]
+            # Carry over if rows are empty at open.
+            if curr_tick == 'O':
+                trade_id[curr_idx] = trade_id[prev_idx]
+                cnt_long[curr_idx] = cnt_long[prev_idx]
+                qty_long[curr_idx] = qty_long[prev_idx]
+                stop_loss[curr_idx] = stop_loss[prev_idx]
+                last_fill[curr_idx] = last_fill[prev_idx]
+                avg_price[curr_idx] = avg_price[prev_idx]
+                cashflow[curr_idx] = 0
+                book_value[curr_idx] = book_value[prev_idx]
+                market_value[curr_idx] = market_value[prev_idx]
+                trade_pnl[curr_idx] = trade_pnl[prev_idx]
 
             # Trade columns.
             # trade_id[curr_idx]
