@@ -310,43 +310,6 @@ class pandas_algo_turtle(object):
             curr_date = next_date
 
 
-    def check_sp500_constituents(self, start_date_str, end_date_str):
-
-        #----------------------------------------------------------------------
-        # Initialize dates.
-        #----------------------------------------------------------------------
-        start_date = date.fromisoformat(start_date_str)
-        end_date = date.fromisoformat(end_date_str)
-        prefetch_start_date = start_date - relativedelta(months=PREFETCH_NUM_MONTH)
-
-        curr_date = prefetch_start_date
-
-        #----------------------------------------------------------------------
-        # Iterate date range.
-        #----------------------------------------------------------------------
-        while curr_date <= end_date:
-
-            # Create pandas datetime object.
-            curr_date_pd = pd.to_datetime(curr_date)
-
-            #----------------------------------------------------------------------
-            # Fetch S&P500 list.
-            #----------------------------------------------------------------------
-            sp500_list = get_sp500(curr_date.isoformat()).split(',')
-            sp500_arr = np.array(sp500_list)
-
-            df_sp500 = pd.DataFrame(sp500_arr, columns=["symbol"])
-
-            # Check if symbol is in S&P500.
-            self.df.loc[ self.df.date == curr_date_pd, "sp500" ] = self.df.loc[ self.df.date == curr_date_pd, "symbol" ].isin(df_sp500.symbol)
-
-            #------------------------------------------------------------------
-            # Next iteration.
-            #------------------------------------------------------------------
-            next_date = curr_date + timedelta(1)
-            curr_date = next_date
-
-
     @staticmethod
     def momentum_score(time_series):
         # Exponential model: y = a * e^(b*x)
