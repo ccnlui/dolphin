@@ -489,6 +489,13 @@ class pandas_algo_turtle(object):
 
 
         def buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod):
+            """
+            Enter position using latest indicators calculated using prices until last close.
+            
+            Current limitations:
+                - Cannot buy multiple times in 1 day
+                - Cannot buy if sold symbol earlier the same day
+            """
 
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
@@ -508,7 +515,7 @@ class pandas_algo_turtle(object):
 
             elif target_qty_long > 0:
 
-                # Initialize columns.
+                # Initialize columns in case they are empty.
                 cashflow[curr_idx] = 0 if np.isnan(cashflow[curr_idx]) else cashflow[curr_idx]
                 book_value[curr_idx] = 0 if np.isnan(book_value[curr_idx]) else book_value[curr_idx]
                 market_value[curr_idx] = 0 if np.isnan(market_value[curr_idx]) else market_value[curr_idx]
@@ -523,7 +530,6 @@ class pandas_algo_turtle(object):
                 # Account.
                 curr_cash -= curr_price * target_qty_long
 
-                # Account columns.
                 cash[curr_idx] = curr_cash
                 equity[curr_idx] = curr_equity
                 account_pnl[curr_idx] = curr_account_pnl
@@ -596,7 +602,7 @@ class pandas_algo_turtle(object):
             last_fill[curr_idx] = curr_price
             avg_price[curr_idx] = 0
 
-            # Account columns.
+            # Account columns (no change).
             cash[curr_idx] = curr_cash
             equity[curr_idx] = curr_equity
             account_pnl[curr_idx] = curr_account_pnl
@@ -765,7 +771,7 @@ class pandas_algo_turtle(object):
             if trading:
 
                 #------------------------------------------------------------------
-                # Pre-market: liquidate halted/delisted symbols.
+                # Pre-market: liquidate symbols not available for trading.
                 #------------------------------------------------------------------
                 for curr_symbol in portfolio_symbol.copy():
                     if curr_symbol not in symbol_curr_idx:
@@ -1137,10 +1143,6 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         print("[{}] [INFO] Generating trading data...".format(datetime.now().isoformat()))
         self.generate_all_trading_data(start_date_str, end_date_str)
-
-        #--------------------------------------------------------------------------
-        # Generate returns.
-        #--------------------------------------------------------------------------
 
         return
 
