@@ -21,7 +21,7 @@ import os
 MARKET_DATA_ROOT_PATH = "/home/calvin/source/data/alpha_vantage/backup/2021-01-16/data"
 CREDENTIALS_FULLPATH  = "/media/calvin/Backup Plus/backup/source/credentials/credentials.ini"
 PREFETCH_NUM_MONTH = 12
-START_DATE = "2010-01-01"
+START_DATE = "2001-01-01"
 END_DATE = "2020-12-31"
 INTERVAL = "1day"
 

@@ -19,7 +19,7 @@ VOL_PERIOD = 20
 YEARLY_TRADING_DAYS = 252
 MOMENTUM_WINDOW = 125
 MIN_MOMENTUM_SCORE = 40
-PORTFOLIO_NUM_STOCK = 30
+PORTFOLIO_NUM_STOCK = 5
 
 INITIAL_CAPITAL = 100000
 
@@ -34,7 +34,7 @@ EXP_MODEL_GUESS_B = 0.1
 MODEL_PRECISION = 4
 
 # Round std. Minimum is 1%.
-BASIS_POINT_DP = 2
+BASIS_POINT_DP = 4
 
 PENNY_PRICE = 1
 EXPENSIVE_PRICE = 10000
@@ -44,7 +44,7 @@ MARKET_TREND_FILTER_DAYS = 200
 #--------------------------------------------------------------------------
 # Backtest period.
 #--------------------------------------------------------------------------
-START_DATE = "2010-01-01"
+START_DATE = "2001-01-01"
 END_DATE = "2020-12-31"
 INTERVAL = "1day"
 PREFETCH_NUM_MONTH = 12
