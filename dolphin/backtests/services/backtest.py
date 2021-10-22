@@ -425,7 +425,6 @@ class pandas_algo_turtle(object):
     #--------------------------------------------------------------------------
     # Assumption:
     #   1. A symbol can only have at max 1 signal at any point in time
-    #   2. Margin account that allows negative cash.
     #--------------------------------------------------------------------------
     @staticmethod
     # @jit(nopython=True)
@@ -502,6 +501,14 @@ class pandas_algo_turtle(object):
 
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]
+
+            # Market trend filter.
+            if not market_trend_filter[curr_idx]:
+                print("[DEBUG]  Market trend down: {} Not buying {}.".format(
+                    curr_date,
+                    curr_symbol,
+                ))
+                return False
 
             if cnt_long[curr_idx] > 0:
                 return False
@@ -661,14 +668,7 @@ class pandas_algo_turtle(object):
 
             target_qty_long = np.floor(equity_bod * weights[prev_idx] / curr_price)
 
-            # Market trend filter.
-            if not market_trend_filter[curr_idx]:
-                print("[DEBUG]  Market trend down: {} Not buying {}.".format(
-                    curr_date,
-                    curr_symbol,
-                ))
-
-            elif target_qty_long == 0:
+            if target_qty_long == 0:
                 print("------------------------------------------------")
                 print("[WARNING] Buying symbol {} with target quantity 0 on {}. ({} * {} / {})".format(
                     curr_symbol,
