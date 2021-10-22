@@ -45,9 +45,6 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     turtle.generate_trade_summary()
     turtle.generate_tear_sheet()
-
-    # turtle.dump_weights_entries()
-    # turtle.dump_cashflow_entries()
     
     turtle.generate_backtest_graph(START_DATE, END_DATE)
 
