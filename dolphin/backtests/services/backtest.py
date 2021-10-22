@@ -609,6 +609,7 @@ class pandas_algo_turtle(object):
         def mark_to_market(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl):
             """
             Mark to market at every tick.
+            Carry over previous day's values at open.
             """
 
             curr_idx = symbol_curr_idx[curr_symbol]
