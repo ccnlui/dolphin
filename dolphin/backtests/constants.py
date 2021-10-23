@@ -48,7 +48,7 @@ EXPENSIVE_PRICE = 10000
 
 MARKET_TREND_FILTER_DAYS = 200
 
-TRADE_FREQUENCY = TRADE_DAILY
+TRADE_FREQUENCY = TRADE_MONTHLY
 
 #--------------------------------------------------------------------------
 # Backtest period.

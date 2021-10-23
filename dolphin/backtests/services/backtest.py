@@ -336,7 +336,7 @@ class pandas_algo_turtle(object):
             if TRADE_FREQUENCY == TRADE_MONTHLY:
                 if (
                     prev_trading_date is None
-                    or curr_date.month > prev_trading_date.month
+                    or curr_date.month != prev_trading_date.month
                 ):
                     return True
 
