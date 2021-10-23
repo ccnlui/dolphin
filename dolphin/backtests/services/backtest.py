@@ -319,6 +319,10 @@ class pandas_algo_turtle(object):
 
         def is_trading_day(curr_date, prev_trading_date):
 
+            curr_date = pd.to_datetime(curr_date)
+            if prev_trading_date is not None:
+                prev_trading_date = pd.to_datetime(prev_trading_date)
+
             if TRADE_FREQUENCY == TRADE_DAILY:
                 return True
 
