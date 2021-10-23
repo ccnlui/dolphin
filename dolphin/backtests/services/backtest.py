@@ -288,7 +288,6 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Initialize variables.
         #--------------------------------------------------------------------------
-        ready_for_trading = False
         curr_trade_id = 0
         curr_date = None
         curr_cash = initial_capital
@@ -738,15 +737,14 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         for idx in range(0, length):
 
+            #------------------------------------------------------------------
             # New date.
+            #------------------------------------------------------------------
             if date[idx] != curr_date:
 
                 print("[DEBUG] Processing date {}...".format(date[idx]))
 
-                #------------------------------------------------------------------
                 # Reset.
-                #------------------------------------------------------------------
-                ready_for_trading = False
                 curr_date = date[idx]
 
                 # Store previous day's symbols.
@@ -765,7 +763,7 @@ class pandas_algo_turtle(object):
             symbol_str = str(symbol[idx])
             symbol_curr_idx[symbol_str] = idx
 
-            # Watchlist.
+            # Insert to watchlist.
             if turtle_rank[idx] <= portfolio_num_stock:
                 # curr_watchlist.append(symbol_str)
                 bisect.insort(curr_watchlist, symbol_str)
@@ -777,7 +775,7 @@ class pandas_algo_turtle(object):
             #------------------------------------------------------------------
             # Trading.
             #------------------------------------------------------------------
-            if in_backtest_period(curr_date, start_date, end_date) and is_trading_day(curr_date):
+            if in_backtest_period(curr_date, start_date, end_date):
 
                 #------------------------------------------------------------------
                 # Pre-market: liquidate symbols not available for trading.
@@ -804,30 +802,25 @@ class pandas_algo_turtle(object):
                     equity_bod = curr_equity
 
                 #------------------------------------------------------------------
-                # Open: Sell.
+                # Open: Sell, rebalance, buy.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol.copy():
-                    curr_tick = 'O'
-                    curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
-                    if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
+                if is_trading_day(curr_date):
+                    for curr_symbol in portfolio_symbol.copy():
+                        curr_tick = 'O'
+                        curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                        if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                            curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
 
-                #------------------------------------------------------------------
-                # Open: Rebalance.
-                #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol:
-                    curr_tick = 'O'
-                    curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
-                    curr_cash, curr_equity, curr_account_pnl = rebalance(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
+                    for curr_symbol in portfolio_symbol:
+                        curr_tick = 'O'
+                        curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                        curr_cash, curr_equity, curr_account_pnl = rebalance(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
-                #------------------------------------------------------------------
-                # Open: Buy.
-                #------------------------------------------------------------------
-                for curr_symbol in prev_watchlist.copy():
-                    curr_tick = 'O'
-                    curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
-                    if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
+                    for curr_symbol in prev_watchlist.copy():
+                        curr_tick = 'O'
+                        curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                        if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                            curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
                 '''
                 #------------------------------------------------------------------
@@ -839,22 +832,20 @@ class pandas_algo_turtle(object):
                     curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
-                # High: Sell.
+                # High: Sell, buy.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol.copy():
-                    curr_tick = 'H'
-                    curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
-                    if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
+                if is_trading_day(curr_date):
+                    for curr_symbol in portfolio_symbol.copy():
+                        curr_tick = 'H'
+                        curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
+                        if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                            curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
 
-                #------------------------------------------------------------------
-                # High: Buy.
-                #------------------------------------------------------------------
-                for curr_symbol in prev_watchlist.copy():
-                    curr_tick = 'H'
-                    curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
-                    if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
+                    for curr_symbol in prev_watchlist.copy():
+                        curr_tick = 'H'
+                        curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
+                        if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                            curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
                 #------------------------------------------------------------------
                 # Low: Mark-to-market.
@@ -865,22 +856,20 @@ class pandas_algo_turtle(object):
                     curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
-                # Low: Sell.
+                # Low: Sell, buy.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol.copy():
-                    curr_tick = 'L'
-                    curr_price = split_adjusted_low[symbol_curr_idx[curr_symbol]]
-                    if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
+                if is_trading_day(curr_date):
+                    for curr_symbol in portfolio_symbol.copy():
+                        curr_tick = 'L'
+                        curr_price = split_adjusted_low[symbol_curr_idx[curr_symbol]]
+                        if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                            curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
 
-                #------------------------------------------------------------------
-                # Low: Buy.
-                #------------------------------------------------------------------
-                for curr_symbol in prev_watchlist.copy():
-                    curr_tick = 'L'
-                    curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
-                    if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
+                    for curr_symbol in prev_watchlist.copy():
+                        curr_tick = 'L'
+                        curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                        if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                            curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
                 '''
 
                 #------------------------------------------------------------------
@@ -892,22 +881,20 @@ class pandas_algo_turtle(object):
                     curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl)
 
                 #------------------------------------------------------------------
-                # Close: Sell.
+                # Close: Sell, buy.
                 #------------------------------------------------------------------
-                for curr_symbol in portfolio_symbol.copy():
-                    curr_tick = 'C'
-                    curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
-                    if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
+                if is_trading_day(curr_date):
+                    for curr_symbol in portfolio_symbol.copy():
+                        curr_tick = 'C'
+                        curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                        if sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                            curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl)
 
-                #------------------------------------------------------------------
-                # Close: Buy.
-                #------------------------------------------------------------------
-                for curr_symbol in prev_watchlist.copy():
-                    curr_tick = 'C'
-                    curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
-                    if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
-                        curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
+                    for curr_symbol in prev_watchlist.copy():
+                        curr_tick = 'C'
+                        curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                        if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
+                            curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
 
         return trade_id, cnt_long, qty_long, stop_loss, last_fill, avg_price, cashflow, book_value, market_value, trade_pnl, cash, equity, account_pnl
 
