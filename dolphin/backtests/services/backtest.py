@@ -60,6 +60,10 @@ from backtests.constants import (
     SINGLE_DAY_VOLATILITY_FILTER_PCT,
     START_DATE,
     END_DATE,
+    TRADE_DAILY,
+    TRADE_FREQUENCY,
+    TRADE_MONTHLY,
+    TRADE_WEEKLY_WEDNESDAY,
     TURTLE_PERIOD_ENTRY,
     TURTLE_PERIOD_EXIT,
     VOL_PERIOD,
@@ -294,6 +298,7 @@ class pandas_algo_turtle(object):
         curr_equity = curr_cash
         curr_account_pnl = 0
         equity_bod = curr_equity
+        prev_trading_date = None
 
         #--------------------------------------------------------------------------
         # Keep track of symbol variables.
@@ -312,8 +317,26 @@ class pandas_algo_turtle(object):
             return start_date <= curr_date and curr_date <= end_date
 
 
-        def is_trading_day(curr_date):
-            return True
+        def is_trading_day(curr_date, prev_trading_date):
+
+            if TRADE_FREQUENCY == TRADE_DAILY:
+                return True
+
+            if TRADE_FREQUENCY == TRADE_WEEKLY_WEDNESDAY:
+                if (
+                    curr_date.isocalendar().weekday == 3
+                    or (prev_trading_date is not None and (curr_date - prev_trading_date).days > 7)
+                ):
+                    return True
+
+            if TRADE_FREQUENCY == TRADE_MONTHLY:
+                if (
+                    prev_trading_date is None
+                    or curr_date.month > prev_trading_date.month
+                ):
+                    return True
+
+            return False
 
 
         def new_trade_id():
@@ -804,7 +827,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Open: Sell, rebalance, buy.
                 #------------------------------------------------------------------
-                if is_trading_day(curr_date):
+                if is_trading_day(curr_date, prev_trading_date):
                     for curr_symbol in portfolio_symbol.copy():
                         curr_tick = 'O'
                         curr_price = split_adjusted_open[symbol_curr_idx[curr_symbol]]
@@ -834,7 +857,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # High: Sell, buy.
                 #------------------------------------------------------------------
-                if is_trading_day(curr_date):
+                if is_trading_day(curr_date, prev_trading_date):
                     for curr_symbol in portfolio_symbol.copy():
                         curr_tick = 'H'
                         curr_price = split_adjusted_high[symbol_curr_idx[curr_symbol]]
@@ -858,7 +881,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Low: Sell, buy.
                 #------------------------------------------------------------------
-                if is_trading_day(curr_date):
+                if is_trading_day(curr_date, prev_trading_date):
                     for curr_symbol in portfolio_symbol.copy():
                         curr_tick = 'L'
                         curr_price = split_adjusted_low[symbol_curr_idx[curr_symbol]]
@@ -883,7 +906,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Close: Sell, buy.
                 #------------------------------------------------------------------
-                if is_trading_day(curr_date):
+                if is_trading_day(curr_date, prev_trading_date):
                     for curr_symbol in portfolio_symbol.copy():
                         curr_tick = 'C'
                         curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
@@ -895,6 +918,12 @@ class pandas_algo_turtle(object):
                         curr_price = split_adjusted_close[symbol_curr_idx[curr_symbol]]
                         if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
                             curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod)
+
+                #------------------------------------------------------------------
+                # After market.
+                #------------------------------------------------------------------
+                if is_trading_day(curr_date, prev_trading_date):
+                    prev_trading_date = curr_date
 
         return trade_id, cnt_long, qty_long, stop_loss, last_fill, avg_price, cashflow, book_value, market_value, trade_pnl, cash, equity, account_pnl
 
