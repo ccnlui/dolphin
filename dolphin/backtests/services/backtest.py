@@ -288,7 +288,7 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Initialize variables.
         #--------------------------------------------------------------------------
-        trading = False
+        ready_for_trading = False
         curr_trade_id = 0
         curr_date = None
         curr_cash = initial_capital
@@ -309,6 +309,14 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Inner helper.
         #--------------------------------------------------------------------------
+        def in_backtest_period(curr_date, start_date, end_date):
+            return start_date <= curr_date and curr_date <= end_date
+
+
+        def is_trading_day(curr_date):
+            return True
+
+
         def new_trade_id():
             nonlocal curr_trade_id
             curr_trade_id += 1
@@ -349,6 +357,7 @@ class pandas_algo_turtle(object):
                 return True
 
             return False
+
 
         def sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx):
 
@@ -737,7 +746,7 @@ class pandas_algo_turtle(object):
                 #------------------------------------------------------------------
                 # Reset.
                 #------------------------------------------------------------------
-                trading = False
+                ready_for_trading = False
                 curr_date = date[idx]
 
                 # Store previous day's symbols.
@@ -761,14 +770,14 @@ class pandas_algo_turtle(object):
                 # curr_watchlist.append(symbol_str)
                 bisect.insort(curr_watchlist, symbol_str)
 
+            # Finish reading entire day's data before trading.
+            if idx+1 < length and date[idx+1] <= curr_date:
+                continue
+
             #------------------------------------------------------------------
             # Trading.
             #------------------------------------------------------------------
-            # Read in all symbols for a day before trading.
-            if (idx+1 == length or date[idx+1] > curr_date) and start_date <= curr_date and curr_date <= end_date:
-                trading = True
-
-            if trading:
+            if in_backtest_period(curr_date, start_date, end_date) and is_trading_day(curr_date):
 
                 #------------------------------------------------------------------
                 # Pre-market: liquidate symbols not available for trading.
