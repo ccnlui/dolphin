@@ -7,6 +7,13 @@
 from datetime import date, time
 
 #--------------------------------------------------------------------------
+# Constants.
+#--------------------------------------------------------------------------
+TRADE_DAILY = "trade_daily"
+TRADE_WEEKLY_WEDNESDAY = "trade_weekly_wednesday"
+TRADE_MONTHLY = "trade_monthly"
+
+#--------------------------------------------------------------------------
 # Turtle algo parameters.
 #--------------------------------------------------------------------------
 TURTLE_PERIOD_ENTRY = 20
@@ -42,13 +49,6 @@ EXPENSIVE_PRICE = 10000
 MARKET_TREND_FILTER_DAYS = 200
 
 TRADE_FREQUENCY = TRADE_WEEKLY_WEDNESDAY
-
-#--------------------------------------------------------------------------
-# Constants.
-#--------------------------------------------------------------------------
-TRADE_DAILY = "trade_daily"
-TRADE_WEEKLY_WEDNESDAY = "trade_weekly_wednesday"
-TRADE_MONTHLY = "trade_monthly"
 
 #--------------------------------------------------------------------------
 # Backtest period.
