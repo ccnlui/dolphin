@@ -355,7 +355,7 @@ class pandas_algo_turtle(object):
             prev_idx = symbol_prev_idx[curr_symbol]
 
             # Market trend filter.
-            if not market_trend_filter[curr_idx]:
+            if not market_trend_filter[prev_idx]:
                 print("[DEBUG]  Market trend down: {} Not buying {}.".format(
                     date[curr_idx],
                     curr_symbol,
@@ -673,7 +673,7 @@ class pandas_algo_turtle(object):
             delta_qty_long = target_qty_long - qty_long[curr_idx]
 
             # Market trend filter.
-            if not market_trend_filter[curr_idx]:
+            if not market_trend_filter[prev_idx]:
                 print("[DEBUG]  Market trend down: {} Not buying {}.".format(
                     curr_date,
                     curr_symbol,
