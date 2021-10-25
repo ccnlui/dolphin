@@ -76,9 +76,7 @@ class pandas_algo_turtle(object):
     # Constructor.
     #--------------------------------------------------------------------------
     def __init__(self):
-        #----------------------------------------------------------------------
-        # Members.
-        #----------------------------------------------------------------------
+
         # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
         self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
         # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
@@ -97,6 +95,12 @@ class pandas_algo_turtle(object):
     # Methods.
     #--------------------------------------------------------------------------
     def load_market_data_from_db(self, symbol_universe, start_date_str, end_date_str, interval):
+        """
+        Fetch daily adjusted close from database within backtest period for all symbols.
+
+        Returns:
+        DataFrame
+        """
 
         print("[{}] [INFO] Loading market data from database...".format(datetime.now().isoformat()))
 
@@ -140,33 +144,39 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Combine all symbol dataframes together.
         #--------------------------------------------------------------------------
-        self.df = pd.concat(df_list, ignore_index=True)
+        df = pd.concat(df_list, ignore_index=True)
 
         #--------------------------------------------------------------------------
         # Convert date column to type numpy datetime64.
         #--------------------------------------------------------------------------
-        self.df.date = pd.to_datetime(self.df.date)
+        df.date = pd.to_datetime(df.date)
 
         #--------------------------------------------------------------------------
         # Write to csv.
         #--------------------------------------------------------------------------
-        self.df.to_csv("{}/algo_turtle_indicators.csv".format(CSV_ROOT_PATH), index=False)
+        df.to_csv("{}/algo_turtle_indicators.csv".format(CSV_ROOT_PATH), index=False)
 
-        return
+        return df
 
 
     def load_market_data_from_csv(self, csv_fullpath):
+        """
+        Fetch daily adjusted close from CSV file.
+
+        Returns:
+        DataFrame
+        """
 
         print("[{}] [INFO] Loading market data from csv...".format(datetime.now().isoformat()))
 
-        self.df = pd.read_csv(csv_fullpath)
+        df = pd.read_csv(csv_fullpath)
 
         #--------------------------------------------------------------------------
         # Convert date column to type numpy datetime64.
         #--------------------------------------------------------------------------
-        self.df.date = pd.to_datetime(self.df.date)
+        df.date = pd.to_datetime(df.date)
 
-        return
+        return df
 
 
     @staticmethod
@@ -1131,9 +1141,19 @@ class pandas_algo_turtle(object):
         return
 
 
-    def backtest_turtle_rules(self, start_date_str, end_date_str):
+    def backtest_turtle_rules(self, df, start_date_str, end_date_str):
+        """
+        Generate indicators and backtest algo rules within backtest period.
 
-        df = self.df
+        Params:
+        df             (DataFrame): Daily adjusted close for all symbols
+        start_date_str (str)      : Backtest period start date in YYYY-MM-DD
+        end_date_str   (str)      : Backtest period end date in YYYY-MM-DD
+
+        Return:
+        df (DataFrame): Original data with extra indicator columns + trading columns.
+        """
+
         #--------------------------------------------------------------------------
         # Rank qualified stocks by momentum.
         #--------------------------------------------------------------------------
@@ -1173,16 +1193,16 @@ class pandas_algo_turtle(object):
         print("[{}] [INFO] Generating trading data...".format(datetime.now().isoformat()))
         self.generate_all_trading_data(start_date_str, end_date_str)
 
-        return
+        return df
 
 
-    def generate_backtest_graph(self, start_date_str, end_date_str):
+    def generate_backtest_graph(self, df, start_date_str, end_date_str):
         print("[{}] [INFO] Generating backtest graph...".format(datetime.now().isoformat()))
 
         #--------------------------------------------------------------------------
         # Calculate returns.
         #--------------------------------------------------------------------------
-        df_turtle = self.generate_df_returns_one_pass(self.df, start_date_str, end_date_str)
+        df_turtle = self.generate_df_returns_one_pass(df, start_date_str, end_date_str)
         df_spy = get_daily_split_adjusted_df("SPY", start_date_str, end_date_str)
         df_spy["returns"] = df_spy.split_adjusted_close.pct_change()
 
@@ -1198,33 +1218,52 @@ class pandas_algo_turtle(object):
         #--------------------------------------------------------------------------
         # Make graph with Plotly.
         #--------------------------------------------------------------------------
-        fig = make_subplots(rows=1, cols=1,
-                            shared_xaxes=True,
-                            vertical_spacing=0,
-                            row_heights=[1])
+        fig = make_subplots(
+            rows=1,
+            cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0,
+            row_heights=[1]
+        )
 
-        fig.add_trace(go.Scatter(x=df_turtle.date, y=df_turtle.cum_returns, name="turtle"),
-                        row=1, col=1)
+        fig.add_trace(
+            go.Scatter(x=df_turtle.date, y=df_turtle.cum_returns, name="turtle"),
+            row=1,
+            col=1
+        )
 
-        fig.add_trace(go.Scatter(x=df_spy.date, y=df_spy.cum_returns, name="spy"),
-                        row=1, col=1)
+        fig.add_trace(
+            go.Scatter(x=df_spy.date, y=df_spy.cum_returns, name="spy"),
+            row=1,
+            col=1
+        )
 
         # Close.
-        # fig.add_trace(go.Scatter(x=df.date, y=df.split_adjusted_close, name=symbol),
-        #                 row=1, col=1)
+        # fig.add_trace(
+        #     go.Scatter(x=df.date, y=df.split_adjusted_close, name=symbol),
+        #     row=1,
+        #     col=1
+        # )
 
-        # # Open, high, low, close.
-        # fig.add_trace(go.Candlestick(x=df.date,
-        #                                 open=df.split_adjusted_open,
-        #                                 high=df.split_adjusted_high,
-        #                                 low=df.split_adjusted_low,
-        #                                 close=df.split_adjusted_close,
-        #                                 name=symbol),
-        #                 row=1, col=1)
+        # Open, high, low, close.
+        # fig.add_trace(
+        #     go.Candlestick(
+        #         x=df.date,
+        #         open=df.split_adjusted_open,
+        #         high=df.split_adjusted_high,
+        #         low=df.split_adjusted_low,
+        #         close=df.split_adjusted_close,
+        #         name=symbol
+        #     ),
+        #     row=1,
+        #     col=1
+        # )
 
 
-        fig.update_layout(autosize=True,
-                            hovermode="x unified")
+        fig.update_layout(
+            autosize=True,
+            hovermode="x unified"
+        )
 
         # Sync x axis during zoom and pan.
         fig.update_xaxes(matches='x')
@@ -1259,8 +1298,6 @@ class pandas_algo_turtle(object):
 
         # Save to HTML file.
         # fig.write_html("{}/{}_{}-{}.html".format(GRAPH_ROOT_PATH, self.symbol, self.start_date_str, self.end_date_str))
-
-        return
 
 
     def generate_symbol_graph(self, symbol, start_date_str, end_date_str):
@@ -1335,18 +1372,16 @@ class pandas_algo_turtle(object):
         return
 
 
-    def generate_trade_summary(self):
+    def generate_trade_summary(self, df):
+        """
+        Analyze trades from backtest period and write to CSV file.
+        """
 
         print("[{}] [INFO] Generating trade summary...".format(datetime.now().isoformat()))
 
         # Dictionary of list. Key: symbol. Value: [ entry date, last open trade ]
         trade_info = {}
         df_trade_summary_values = []
-
-        #--------------------------------------------------------------------------
-        # Get dataframe.
-        #--------------------------------------------------------------------------
-        df = self.df
 
         #--------------------------------------------------------------------------
         # Create named tuple trade.
@@ -1380,13 +1415,15 @@ class pandas_algo_turtle(object):
                 entry_date, last_open_trade = symbol_trade_info
                 exit_trade = row
 
-                df_trade_summary_values.append(TradeSummaryTuple(last_open_trade.symbol,
-                                                            entry_date,
-                                                            last_open_trade.date,
-                                                            last_open_trade.avg_price,
-                                                            exit_trade.split_adjusted_open,
-                                                            last_open_trade.book_value,
-                                                            exit_trade.trade_pnl))
+                df_trade_summary_values.append(TradeSummaryTuple(
+                    last_open_trade.symbol,
+                    entry_date,
+                    last_open_trade.date,
+                    last_open_trade.avg_price,
+                    exit_trade.split_adjusted_open,
+                    last_open_trade.book_value,
+                    exit_trade.trade_pnl
+                ))
 
         #--------------------------------------------------------------------------
         # Add outstanding trades.
@@ -1396,13 +1433,15 @@ class pandas_algo_turtle(object):
             # Unpack list.
             entry_date, last_open_trade = symbol_trade_info
 
-            df_trade_summary_values.append(TradeSummaryTuple(last_open_trade.symbol,
-                                                        entry_date,
-                                                        np.nan,
-                                                        last_open_trade.avg_price,
-                                                        np.nan,
-                                                        last_open_trade.book_value,
-                                                        np.nan))
+            df_trade_summary_values.append(TradeSummaryTuple(
+                last_open_trade.symbol,
+                entry_date,
+                np.nan,
+                last_open_trade.avg_price,
+                np.nan,
+                last_open_trade.book_value,
+                np.nan
+            ))
 
         #--------------------------------------------------------------------------
         # Convert to dataframe.
@@ -1492,14 +1531,17 @@ class pandas_algo_turtle(object):
 
 
 
-    def generate_tear_sheet(self):
+    def generate_tear_sheet(self, df):
+        """
+        Analyze returns from backtest period.
+        """
 
         print("[{}] [INFO] Generating tear sheet...".format(datetime.now().isoformat()))
 
         #--------------------------------------------------------------------------
         # Calculate returns.
         #--------------------------------------------------------------------------
-        df_turtle = self.generate_df_returns_one_pass(self.df, START_DATE, END_DATE)
+        df_turtle = self.generate_df_returns_one_pass(df, START_DATE, END_DATE)
         df_spy = get_daily_split_adjusted_df("SPY", START_DATE, END_DATE)
         df_spy["returns"] = df_spy.split_adjusted_close.pct_change()
 
@@ -1542,8 +1584,6 @@ class pandas_algo_turtle(object):
         print("  daily_value_at_risk: {:.4f}".format(daily_value_at_risk))
         print("                alpha: {:.4f}".format(alpha))
         print("                 beta: {:.4f}".format(beta))
-
-        return
 
 
     def generate_trade_summary_graph(self, trade_summary_full_path):

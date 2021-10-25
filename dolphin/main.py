@@ -23,32 +23,29 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Build database and simulate trading.
     #--------------------------------------------------------------------------
-    turtle.load_market_data_from_db(turtle.symbol_universe, START_DATE, END_DATE, INTERVAL)
-    turtle.backtest_turtle_rules(START_DATE, END_DATE)
-    # turtle.df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
-    df = turtle.df
+    df = turtle.load_market_data_from_db(turtle.symbol_universe, START_DATE, END_DATE, INTERVAL)
+    df = turtle.backtest_turtle_rules(df, START_DATE, END_DATE)
+
+    # Write only relevant rows to CSV file.
     df = df.loc[ (df.turtle_rank <= PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
     df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
 
     #--------------------------------------------------------------------------
     # Simulate trading only.
     #--------------------------------------------------------------------------
-    # turtle.load_market_data_from_csv("/home/calvin/source/dolphin/csv/algo_turtle_indicators.csv")
-    # turtle.backtest_turtle_rules(START_DATE, END_DATE)
-    # # turtle.df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
-    # df = turtle.df
+    # df = turtle.load_market_data_from_csv("/home/calvin/source/dolphin/csv/algo_turtle_indicators.csv")
+    # df = turtle.backtest_turtle_rules(START_DATE, END_DATE)
+
+    # # Write only relevant rows to CSV file.
     # df = df.loc[ (df.turtle_rank <= PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
     # df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
 
     #--------------------------------------------------------------------------
     # Performance analysis.
     #--------------------------------------------------------------------------
-    turtle.generate_trade_summary()
-    turtle.generate_tear_sheet()
-    
-    turtle.generate_backtest_graph(START_DATE, END_DATE)
-
-    # turtle.generate_trade_summary_graph("/home/calvin/source/python/pandas/csv/atr/algo_turtle_trade_summary.csv")
+    turtle.generate_trade_summary(df)
+    turtle.generate_tear_sheet(df)
+    turtle.generate_backtest_graph(df, START_DATE, END_DATE)
 
     #--------------------------------------------------------------------------
     # Graph symbol daily adjusted.
