@@ -89,7 +89,6 @@ class pandas_algo_turtle(object):
         #     self.symbol_universe.remove('raw')
 
         # self.symbol_universe = get_sp500_symbols_list()
-        self.df = None
 
     #--------------------------------------------------------------------------
     # Methods.
@@ -1023,13 +1022,9 @@ class pandas_algo_turtle(object):
         return df_symbol
 
 
-    def generate_all_trading_data(self, start_date_str, end_date_str):
-        #--------------------------------------------------------------------------
-        # Get dataframe.
-        #--------------------------------------------------------------------------
-        df = self.df
+    def generate_all_trading_data(self, df, start_date_str, end_date_str):
 
-        df = df.sort_values(by=["date", "symbol"])
+        df.sort_values(by=["date", "symbol"], inplace=True)
 
         #--------------------------------------------------------------------------
         # Generate trading data.
@@ -1089,56 +1084,7 @@ class pandas_algo_turtle(object):
         df["equity"] = result[11]
         df["account_pnl"] = result[12]
 
-        """
-        # TODO.
-        # Move to a separate function.
-        #----------------------------------------------------------------------
-        # Calculate portfolio returns.
-        #----------------------------------------------------------------------
-        df = df.sort_index()
-        for symbol in self.symbol_universe:
-            #--------------------------------------------------------------------------
-            # Calculate long + short exposure data.
-            #--------------------------------------------------------------------------
-            df.loc[ df.symbol == symbol, "long_exposure" ] = np.where(df.loc[ df.symbol == symbol, "cnt_long" ] > 0,
-                                                                        df.loc[ df.symbol == symbol, "cnt_long" ] * df.loc[ df.symbol == symbol, "split_adjusted_close"],
-                                                                        np.nan)
-
-            #--------------------------------------------------------------------------
-            # Calculate daily return in percentage.
-            #--------------------------------------------------------------------------
-            df.loc[ df.symbol == symbol, "split_adjusted_close_pct" ] = df.loc[ df.symbol == symbol, "split_adjusted_close" ].pct_change()
-            df.loc[ df.symbol == symbol, "algo_turtle_pct" ] = df.loc[ df.symbol == symbol, "equity" ].pct_change()
-
-            #--------------------------------------------------------------------------
-            # Calculate total return in percentage.
-            #--------------------------------------------------------------------------
-            # TODO.
-            # Dollar term.
-            baseline_dollar = df.loc[ df.symbol == symbol, "split_adjusted_close" ].head(1).iloc[0]
-
-            df.loc[ (df.symbol == symbol) & (df.date >= start_date_str), "split_adjusted_close_return" ] = df.loc[ df.symbol == symbol, "split_adjusted_close_pct" ].add(1).cumprod().mul(baseline_dollar)
-
-            #--------------------------------------------------------------------------
-            # Calculate total profit and loss in dollars.
-            #--------------------------------------------------------------------------
-            # TODO.
-            # Dollar term.
-            baseline_dollar = df.loc[ (df.symbol == symbol) & (df.date >= start_date_str), "split_adjusted_close" ].head(1).iloc[0]
-
-            df.loc[ (df.symbol == symbol) & (df.date >= start_date_str), "algo_turtle_return" ] = df.loc[ df.symbol == symbol, "algo_turtle_pct" ].add(1).cumprod().mul(baseline_dollar)
-
-        # Calculate equity returns.
-        df = df.sort_values(by=["date", "symbol"])
-        df.loc[ df.date >= start_date_str, "algo_turtle_equity" ] = df.equity.div(INITIAL_CAPITAL)
-        """
-
-        #--------------------------------------------------------------------------
-        # Set dataframe.
-        #--------------------------------------------------------------------------
-        self.df = df
-
-        return
+        return df
 
 
     def backtest_turtle_rules(self, df, start_date_str, end_date_str):
@@ -1191,7 +1137,7 @@ class pandas_algo_turtle(object):
         # Generate symbol trading data.
         #--------------------------------------------------------------------------
         print("[{}] [INFO] Generating trading data...".format(datetime.now().isoformat()))
-        self.generate_all_trading_data(start_date_str, end_date_str)
+        df = self.generate_all_trading_data(df, start_date_str, end_date_str)
 
         return df
 
