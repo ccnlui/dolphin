@@ -22,6 +22,8 @@ ATR_PERIOD                        = 20
 ATR_SMOOTHING_FACTOR              = 1 / ATR_PERIOD
 EXP_MODEL_GUESS_A                 = 4
 EXP_MODEL_GUESS_B                 = 0.1
+MARKET_TREND_FILTER_DAYS          = 200
+MIN_MOMENTUM_SCORE                = 40
 MOMENTUM_WINDOW                   = 125
 PORTFOLIO_NUM_STOCK               = 10
 SINGLE_DAY_VOLATILITY_FILTER_DAYS = 90
@@ -32,6 +34,9 @@ VOL_PERIOD                        = 20
 # Round std. Minimum is 0.1%.
 BASIS_POINT_DP                    = 4
 TRADE_FREQUENCY                   = TRADE_DAILY
+
+PENNY_PRICE = 1
+EXPENSIVE_PRICE = 10000
 
 
 #--------------------------------------------------------------------------
@@ -190,7 +195,7 @@ def generate_stale_filter(df_ohlc):
 
 
 def generate_market_trend_filter(df_ohlc):
-    df_ohlc = df_ohlc.loc[ :, ['date', 'split_adjusted_close']]
+    df_ohlc.drop(df_ohlc.columns.difference(['date', 'split_adjusted_close']), axis=1, inplace=True)
     df_ohlc.rename(columns={'split_adjusted_close': 'market_close'}, inplace=True)
     df_ohlc.set_index('date', inplace=True)
     df_ohlc['market_close_sma'] = df_ohlc.market_close.rolling(MARKET_TREND_FILTER_DAYS).mean()
@@ -298,6 +303,10 @@ class SystematicMomentum(Algo):
 
     def get_trade_frequency(self):
         return TRADE_FREQUENCY
+
+
+    def get_portfolio_num_stock(self):
+        return PORTFOLIO_NUM_STOCK
 
 
     def rank_symbols(self, df):

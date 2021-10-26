@@ -37,33 +37,12 @@ import csv
 import bisect
 
 from backtests.constants import (
-    ATR_PERIOD,
-    ATR_SMOOTHING_FACTOR,
-    BASIS_POINT_DP,
     CSV_ROOT_PATH,
-    EXPENSIVE_PRICE,
-    EXP_MODEL_GUESS_A,
-    EXP_MODEL_GUESS_B,
+    END_DATE,
     INITIAL_CAPITAL,
     MARKET_DATA_ROOT_PATH,
-    MARKET_TREND_FILTER_DAYS,
-    MIN_MOMENTUM_SCORE,
-    MOMENTUM_WINDOW,
-    PENNY_PRICE,
-    PORTFOLIO_NUM_STOCK,
     PREFETCH_NUM_MONTH,
-    SINGLE_DAY_VOLATILITY_FILTER_DAYS,
-    SINGLE_DAY_VOLATILITY_FILTER_PCT,
     START_DATE,
-    END_DATE,
-    TRADE_DAILY,
-    TRADE_FREQUENCY,
-    TRADE_MONTHLY,
-    TRADE_WEEKLY_WEDNESDAY,
-    TURTLE_PERIOD_ENTRY,
-    TURTLE_PERIOD_EXIT,
-    VOL_PERIOD,
-    YEARLY_TRADING_DAYS,
 )
 
 class BacktestService(object):
@@ -94,9 +73,9 @@ class BacktestService(object):
         #----------------------------------------------------------------------
         # Read raw daily adjusted from database.
         #----------------------------------------------------------------------
-        df_list = get_symbol_list_daily_split_adjusted_df_list(symbol_universe, prefetch_start_date.isoformat(), end_date.isoformat())
+        df_symbol_list = get_symbol_list_daily_split_adjusted_df_list(symbol_universe, prefetch_start_date.isoformat(), end_date.isoformat())
 
-        return df
+        return df_symbol_list
 
 
     def load_symbol_universe_data_from_csv(self, csv_fullpath):
@@ -836,7 +815,7 @@ class BacktestService(object):
         #--------------------------------------------------------------------------
         # Initialize columns.
         #--------------------------------------------------------------------------
-        length = date.shape[0]
+        length = len(df)
 
         # Trade specific columns.
         df["trade_id"] = np.nan
@@ -1251,7 +1230,124 @@ class BacktestService(object):
 
             return curr_cash, curr_equity, curr_account_pnl
 
-        print("[{}] [DEBUG] Add trading data to dataframe.".format(datetime.now().isoformat()))
+        #--------------------------------------------------------------------------
+        # Process tick data.
+        #--------------------------------------------------------------------------
+        for idx in range(0, length):
+
+            #------------------------------------------------------------------
+            # New date.
+            #------------------------------------------------------------------
+            if df.date[idx] != curr_date:
+
+                print("[DEBUG] Processing date {}...".format(df.date[idx]))
+
+                # Reset.
+                curr_date = df.date[idx]
+
+                # Store previous day's symbols.
+                for curr_symbol, curr_idx in symbol_curr_idx.items():
+                    symbol_prev_idx[curr_symbol] = curr_idx
+
+                prev_watchlist = curr_watchlist.copy()
+
+                symbol_curr_idx.clear()
+                curr_watchlist.clear()
+
+            #------------------------------------------------------------------
+            # Read in symbol data.
+            #------------------------------------------------------------------
+            symbol_str = str(df.symbol[idx])
+            symbol_curr_idx[symbol_str] = idx
+
+            # Insert to watchlist.
+            if rank[idx] <= algo.get_portfolio_num_stock():
+                # curr_watchlist.append(symbol_str)
+                bisect.insort(curr_watchlist, symbol_str)
+
+            # Finish reading entire day's data before trading.
+            if idx+1 < length and df.date[idx+1] <= curr_date:
+                continue
+
+            #------------------------------------------------------------------
+            # Trading.
+            #------------------------------------------------------------------
+            if in_backtest_period(curr_date, start_date, end_date):
+
+                #------------------------------------------------------------------
+                # Pre-market: liquidate symbols not available for trading.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol.copy():
+                    if curr_symbol not in symbol_curr_idx:
+                        curr_cash, curr_equity, acurr_ccount_pnl = liquidate(curr_date, curr_symbol, symbol_prev_idx, portfolio_symbol, curr_cash, curr_equity, curr_account_pnl, prev_watchlist, df)
+
+                for curr_symbol in prev_watchlist.copy():
+                    if curr_symbol not in symbol_curr_idx:
+                        print("------------------------------------------------")
+                        print("[WARNING] Watchlist symbol: {} not available for trading on {}.".format(curr_symbol, curr_date))
+                        print("------------------------------------------------")
+                        prev_watchlist.remove(curr_symbol)
+
+                #------------------------------------------------------------------
+                # Open: Mark-to-market.
+                #------------------------------------------------------------------
+                equity_bod = curr_equity
+                for curr_symbol in portfolio_symbol:
+                    curr_tick = 'O'
+                    curr_price = df.split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                    curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, df)
+                    equity_bod = curr_equity
+
+                #------------------------------------------------------------------
+                # Open: Sell, rebalance, buy.
+                #------------------------------------------------------------------
+                if is_trading_day(curr_date, prev_trading_date):
+                    for curr_symbol in portfolio_symbol.copy():
+                        curr_tick = 'O'
+                        curr_price = df.split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                        if algo.sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+                            curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl, df)
+
+                    for curr_symbol in portfolio_symbol:
+                        curr_tick = 'O'
+                        curr_price = df.split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                        curr_cash, curr_equity, curr_account_pnl = rebalance(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod, df)
+
+                    for curr_symbol in prev_watchlist.copy():
+                        curr_tick = 'O'
+                        curr_price = df.split_adjusted_open[symbol_curr_idx[curr_symbol]]
+                        if algo.buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+                            curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod, df)
+
+                #------------------------------------------------------------------
+                # Close: Mark-to-market.
+                #------------------------------------------------------------------
+                for curr_symbol in portfolio_symbol:
+                    curr_tick = 'C'
+                    curr_price = df.split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                    curr_cash, curr_equity, curr_account_pnl = mark_to_market(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, df)
+
+                #------------------------------------------------------------------
+                # Close: Sell, buy.
+                #------------------------------------------------------------------
+                if is_trading_day(curr_date, prev_trading_date):
+                    for curr_symbol in portfolio_symbol.copy():
+                        curr_tick = 'C'
+                        curr_price = df.split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                        if algo.sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+                            curr_cash, curr_equity, curr_account_pnl = sell(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, curr_cash, curr_equity, curr_account_pnl, df)
+
+                    for curr_symbol in prev_watchlist.copy():
+                        curr_tick = 'C'
+                        curr_price = df.split_adjusted_close[symbol_curr_idx[curr_symbol]]
+                        if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+                            curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod, df)
+
+                #------------------------------------------------------------------
+                # After market.
+                #------------------------------------------------------------------
+                if is_trading_day(curr_date, prev_trading_date):
+                    prev_trading_date = curr_date
 
         return df
 
@@ -1263,6 +1359,15 @@ class BacktestService(object):
         df_market = self.load_market_benchmark_data_from_db(algo.market_benchmark, start_date_str, end_date_str)
         df = algo.prepare_for_backtest(df_symbol_list, df_market)
         df = self.generate_all_trading_data(algo, df, start_date_str, end_date_str)
+
+        self.dump_trading_data(df, algo.get_portfolio_num_stock())
+
+        return df
+
+
+    def dump_trading_data(self, df, portfolio_num_stock):
+        df = df.loc[ (df.rank <= portfolio_num_stock) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
+        df.to_csv("{}/backtest_systematic_momentum.csv".format(CSV_ROOT_PATH), index=False)
 
 
     def generate_backtest_graph(self, df, start_date_str, end_date_str):

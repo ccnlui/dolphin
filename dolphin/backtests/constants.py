@@ -13,11 +13,7 @@ TRADE_DAILY = "trade_daily"
 TRADE_WEEKLY_WEDNESDAY = "trade_weekly_wednesday"
 TRADE_MONTHLY = "trade_monthly"
 
-#--------------------------------------------------------------------------
-# Turtle algo parameters.
-#--------------------------------------------------------------------------
 YEARLY_TRADING_DAYS = 252
-MIN_MOMENTUM_SCORE = 40
 
 INITIAL_CAPITAL = 100000
 
@@ -27,16 +23,6 @@ DOLLAR_VOL_PCT = 2
 # Round ATR.
 MODEL_PRECISION = 4
 
-PENNY_PRICE = 1
-EXPENSIVE_PRICE = 10000
-
-MARKET_TREND_FILTER_DAYS = 200
-
-TRADE_FREQUENCY = TRADE_MONTHLY
-
-#--------------------------------------------------------------------------
-# Backtest period.
-#--------------------------------------------------------------------------
 START_DATE = "2011-10-26"
 END_DATE = "2020-12-31"
 INTERVAL = "1day"

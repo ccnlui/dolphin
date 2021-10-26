@@ -3,7 +3,7 @@
 #    By: Calvin
 # Brief: Base class of a trading algo.
 
-
+from datetime import datetime
 from backtests.exceptions import NotImplementedError
 
 
@@ -78,6 +78,7 @@ class Algo:
     def generate_market_indicators(self, df_market):
 
         print("[{}] [INFO] Generating market indicators: {}".format(datetime.now().isoformat(), df_market.symbol.iloc[0]))
+        import ipdb; ipdb.set_trace()
         for indicator_method in self.market_indicator_list:
             indicator_method(df_market)
 
@@ -117,11 +118,11 @@ class Algo:
 
     def prepare_for_backtest(self, df_symbol_list, df_market):
 
-        df_market = generate_market_indicators(df_market)
-        df_symbol_list = append_market_indicators_to_symbol(df_symbol_list, df_market)
-        df_symbol_universe = generate_all_symbol_indicators(df_symbol_list)
-        df_symbol_universe = rank_symbols(df_symbol_universe)
-        df_symbol_universe = calculate_symbol_weights(df_symbol_universe)
+        df_market = self.generate_market_indicators(df_market)
+        df_symbol_list = self.append_market_indicators_to_symbol(df_symbol_list, df_market)
+        df_symbol_universe = self.generate_all_symbol_indicators(df_symbol_list)
+        df_symbol_universe = self.rank_symbols(df_symbol_universe)
+        df_symbol_universe = self.calculate_symbol_weights(df_symbol_universe)
 
         df_symbol_universe.sort_values(by=["date", "symbol"], inplace=True)
 
