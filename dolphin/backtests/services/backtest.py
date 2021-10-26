@@ -74,7 +74,7 @@ class BacktestService(object):
     #--------------------------------------------------------------------------
     # Methods.
     #--------------------------------------------------------------------------
-    def load_market_data_from_db(self, symbol_universe, start_date_str, end_date_str, interval):
+    def load_symbol_universe_data_from_db(self, symbol_universe, start_date_str, end_date_str):
         """
         Fetch daily adjusted close from database within backtest period for all symbols.
 
@@ -82,7 +82,7 @@ class BacktestService(object):
         DataFrame
         """
 
-        print("[{}] [INFO] Loading market data from database...".format(datetime.now().isoformat()))
+        print("[{}] [INFO] Loading symbol universe data from database...".format(datetime.now().isoformat()))
 
         #----------------------------------------------------------------------
         # Initialize dates.
@@ -99,7 +99,7 @@ class BacktestService(object):
         return df
 
 
-    def load_market_data_from_csv(self, csv_fullpath):
+    def load_symbol_universe_data_from_csv(self, csv_fullpath):
         """
         Fetch daily adjusted close from CSV file.
 
@@ -107,7 +107,7 @@ class BacktestService(object):
         DataFrame
         """
 
-        print("[{}] [INFO] Loading market data from csv...".format(datetime.now().isoformat()))
+        print("[{}] [INFO] Loading symbol universe data from csv...".format(datetime.now().isoformat()))
 
         df = pd.read_csv(csv_fullpath)
 
@@ -117,6 +117,29 @@ class BacktestService(object):
         df.date = pd.to_datetime(df.date)
 
         return df
+
+
+    def load_market_benchmark_data_from_db(self, market_benchmark, start_date_str, end_date_str):
+        """
+        Fetch daily adjusted close from database within backtest period for market benchmark.
+
+        Returns:
+        DataFrame
+        """
+
+        print("[{}] [INFO] Loading market benchmark data from database...".format(datetime.now().isoformat()))
+
+        #----------------------------------------------------------------------
+        # Initialize dates.
+        #----------------------------------------------------------------------
+        start_date = date.fromisoformat(start_date_str)
+        end_date = date.fromisoformat(end_date_str)
+        prefetch_start_date = start_date - relativedelta(months=PREFETCH_NUM_MONTH)
+
+        #----------------------------------------------------------------------
+        # Read raw daily adjusted from database.
+        #----------------------------------------------------------------------
+        return get_daily_split_adjusted_df(market_benchmark, prefetch_start_date.isoformat(), end_date.isoformat())
 
 
     #--------------------------------------------------------------------------
@@ -871,33 +894,13 @@ class BacktestService(object):
 
         return df
 
-
-    def backtest_turtle_rules(self, df, start_date_str, end_date_str):
-        """
-        Generate indicators and backtest algo rules within backtest period.
-
-        Params:
-        df             (DataFrame): Daily adjusted close for all symbols
-        start_date_str (str)      : Backtest period start date in YYYY-MM-DD
-        end_date_str   (str)      : Backtest period end date in YYYY-MM-DD
-
-        Return:
-        df (DataFrame): Original data with extra indicator columns + trading columns.
-        """
-
-        #--------------------------------------------------------------------------
-        # Generate symbol trading data.
-        #--------------------------------------------------------------------------
-        print("[{}] [INFO] Generating trading data...".format(datetime.now().isoformat()))
-        df = self.generate_all_trading_data(df, start_date_str, end_date_str)
-
-        return df
-
     
-    def backtest_algo(algo_type, start_date_str=None, end_date_str=None):
+    def backtest_algo(self, algo_type, start_date_str=None, end_date_str=None):
         
         algo = algo_type()
-        df = algo.prepare_for_backtest()
+        df_symbol_list = self.load_symbol_universe_data_from_db(algo.symbol_universe, start_date_str, end_date_str)
+        df_market = self.load_market_benchmark_data_from_db(algo.market_benchmark, start_date_str, end_date_str)
+        df = algo.prepare_for_backtest(df_symbol_list, df_market)
         df = self.generate_all_trading_data(df, start_date_str, end_date_str)
 
 

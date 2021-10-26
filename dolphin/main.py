@@ -1,4 +1,3 @@
-from backtests.services.backtest import pandas_algo_turtle
 from datetime import datetime
 
 from backtests.constants import (
@@ -6,8 +5,9 @@ from backtests.constants import (
     END_DATE,
     PORTFOLIO_NUM_STOCK,
     CSV_ROOT_PATH,
-    INTERVAL,
 )
+from backtests.services.backtest import BacktestService
+from backtests.algos.systematic_momentum import SystematicMomentum
 
 
 #------------------------------------------------------------------------------
@@ -18,12 +18,15 @@ if __name__ == '__main__':
     # Measure execution time.
     #--------------------------------------------------------------------------
     start_time = datetime.now()
-    turtle = pandas_algo_turtle()
 
     #--------------------------------------------------------------------------
     # Build database and simulate trading.
     #--------------------------------------------------------------------------
-    df = turtle.load_market_data_from_db(turtle.symbol_universe, START_DATE, END_DATE, INTERVAL)
+    backtest_service = BacktestService()
+    df = backtest_service.backtest_algo(SystematicMomentum, START_DATE, END_DATE)
+
+
+    df = turtle.load_market_data_from_db(turtle.symbol_universe, START_DATE, END_DATE)
     df = turtle.backtest_turtle_rules(df, START_DATE, END_DATE)
 
     # Write only relevant rows to CSV file.

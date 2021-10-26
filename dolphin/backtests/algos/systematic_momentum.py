@@ -188,8 +188,6 @@ def generate_stale_filter(df_ohlc):
 
 
 def generate_market_trend_filter(df_ohlc):
-    # symbol_index = 'SPY'
-    # df_ohlc = get_daily_split_adjusted_df(symbol_index, prefetch_start_date.isoformat(), end_date.isoformat())
     df_ohlc = df_ohlc.loc[ :, ['date', 'split_adjusted_close']]
     df_ohlc.rename(columns={'split_adjusted_close': 'market_close'}, inplace=True)
     df_ohlc.set_index('date', inplace=True)
