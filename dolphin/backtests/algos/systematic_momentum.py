@@ -11,6 +11,7 @@ import numpy as np
 from backtests.algos.algo import Algo
 from backtests.services.market_data import get_sp500_symbols_list
 from backtests.constants import (
+    TRADE_DAILY,
     YEARLY_TRADING_DAYS,
 )
 
@@ -30,6 +31,7 @@ TURTLE_PERIOD_EXIT                = 10
 VOL_PERIOD                        = 20
 # Round std. Minimum is 0.1%.
 BASIS_POINT_DP                    = 4
+TRADE_FREQUENCY                   = TRADE_DAILY
 
 
 #--------------------------------------------------------------------------
@@ -218,6 +220,84 @@ class SystematicMomentum(Algo):
     #--------------------------------------------------------------------------
     def __init__(self):
         super().__init__()
+
+
+    def buy_signal(self, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+
+        curr_idx = symbol_curr_idx[curr_symbol]
+        prev_idx = symbol_prev_idx[curr_symbol]
+
+        # Market trend filter.
+        if not df.market_trend_filter[prev_idx]:
+            print("[DEBUG]  Market trend down: {} Not buying {}.".format(
+                df.date[curr_idx],
+                curr_symbol,
+            ))
+            return False
+
+        if df.cnt_long[curr_idx] > 0:
+            return False
+
+        # Don't buy if it is sold earlier the day.
+        if not np.isnan(df.trade_id[curr_idx]):
+            return False
+
+        # Minimum momentum.
+        if df.momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
+            return False
+
+        # Not rank.
+        if np.isnan(df.rank[prev_idx]) or df.rank[prev_idx] > PORTFOLIO_NUM_STOCK:
+            return False
+
+        # Turtle entry.
+        if True:
+        # if curr_price >= df.close_entry_rolling_max[prev_idx]:
+            return True
+
+        return False
+
+
+    def sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+
+            curr_idx = symbol_curr_idx[curr_symbol]
+            prev_idx = symbol_prev_idx[curr_symbol]
+
+            if df.cnt_long[curr_idx] == 0:
+                return False
+
+            # Turtle exit and stop loss.
+            if False:
+            # if curr_price <= df.close_exit_rolling_min[prev_idx]:
+                return True
+            if False:
+            # if curr_price <= df.stop_loss[prev_idx]:
+                return True
+
+            # Minimum momentum.
+            if df.momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
+                return True
+
+            # Penny stock.
+            if curr_price < PENNY_PRICE:
+                return True
+
+            # Expensive stock.
+            if curr_price > EXPENSIVE_PRICE:
+                return True
+
+            # Not rank.
+            if np.isnan(df.rank[prev_idx]) or df.rank[prev_idx] > PORTFOLIO_NUM_STOCK:
+                return True
+
+            # Volatile.
+            # TODO.
+
+            return False
+
+
+    def get_trade_frequency(self):
+        return TRADE_FREQUENCY
 
 
     def rank_symbols(self, df):
