@@ -66,25 +66,10 @@ from backtests.constants import (
     YEARLY_TRADING_DAYS,
 )
 
-class pandas_algo_turtle(object):
-
-    #--------------------------------------------------------------------------
-    # Constructor.
-    #--------------------------------------------------------------------------
-    def __init__(self):
-
-        # self.symbol_universe = ["AAPL", "AMD", "NVDA"]
-        self.symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
-        # self.symbol_universe = ["AAPL", "AMD", "NVDA", "PTON", "FSLY", "OSTK", "BIGC", "SHOP", "QUSA", "THTX", "GOOGL", "BRNC"]
-        # self.symbol_universe = ["XELB", "ACS", "CODA", "AAPL", "AMD", "NVDA"]
-        # self.symbol_universe = ["CODA"]
-
-        # self.symbol_universe = os.listdir(self.MARKET_DATA_ROOT_PATH)
-        # self.symbol_universe.sort()
-        # if "raw" in self.symbol_universe:
-        #     self.symbol_universe.remove('raw')
-
-        # self.symbol_universe = get_sp500_symbols_list()
+class BacktestService(object):
+    """
+    Stateless service to perform algo trading backtest.
+    """
 
     #--------------------------------------------------------------------------
     # Methods.
@@ -824,6 +809,8 @@ class pandas_algo_turtle(object):
 
     def generate_all_trading_data(self, df, start_date_str, end_date_str):
 
+        print("[{}] [INFO] Generating trading data...".format(datetime.now().isoformat()))
+
         #--------------------------------------------------------------------------
         # Generate trading data.
         #--------------------------------------------------------------------------
@@ -905,6 +892,13 @@ class pandas_algo_turtle(object):
         df = self.generate_all_trading_data(df, start_date_str, end_date_str)
 
         return df
+
+    
+    def backtest_algo(algo_type, start_date_str=None, end_date_str=None):
+        
+        algo = algo_type()
+        df = algo.prepare_for_backtest()
+        df = self.generate_all_trading_data(df, start_date_str, end_date_str)
 
 
     def generate_backtest_graph(self, df, start_date_str, end_date_str):

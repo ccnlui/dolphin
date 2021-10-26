@@ -202,7 +202,8 @@ class SystematicMomentum(Algo):
     #--------------------------------------------------------------------------
     # Class fields for base Algo class.
     #--------------------------------------------------------------------------
-    symbol_universe = get_sp500_symbols_list()
+    # symbol_universe = get_sp500_symbols_list()
+    symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
     market_benchmark = 'SPY'
     symbol_indicator_list = [
         generate_price_pct_change_std_and_inv_std,
@@ -264,8 +265,3 @@ class SystematicMomentum(Algo):
         # df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.turtle_rank / group.turtle_rank  / group.shape[0])
 
         return df
-
-
-    
-
-

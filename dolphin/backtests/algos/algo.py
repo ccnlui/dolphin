@@ -111,7 +111,7 @@ class Algo:
         return df_symbol_universe
 
 
-    def run_algo(self, df_symbol_list, df_market):
+    def prepare_for_backtest(self, df_symbol_list, df_market):
 
         df_market = generate_market_indicators(df_market)
         df_symbol_list = append_market_indicators_to_symbol(df_symbol_list, df_market)
