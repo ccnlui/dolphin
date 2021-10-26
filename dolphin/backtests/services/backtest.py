@@ -21,10 +21,6 @@ import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
-from scipy.stats import stats
-
 from datetime import datetime, date, time, timedelta
 from dateutil.relativedelta import relativedelta
 
@@ -115,46 +111,6 @@ class pandas_algo_turtle(object):
         #----------------------------------------------------------------------
         df_list = get_symbol_list_daily_split_adjusted_df_list(symbol_universe, prefetch_start_date.isoformat(), end_date.isoformat())
 
-        #--------------------------------------------------------------------------
-        # Index close + market trend filter.
-        #--------------------------------------------------------------------------
-        symbol_index = 'SPY'
-        df_index = get_daily_split_adjusted_df(symbol_index, prefetch_start_date.isoformat(), end_date.isoformat())
-        df_index = df_index.loc[ :, ['date', 'split_adjusted_close']]
-        df_index.rename(columns={'split_adjusted_close': 'index_close'}, inplace=True)
-        df_index.set_index('date', inplace=True)
-        df_index['index_close_sma'] = df_index.index_close.rolling(MARKET_TREND_FILTER_DAYS).mean()
-        df_index['market_trend_filter'] = (df_index.index_close > df_index.index_close_sma).astype(int)
-        df_list = [ df.join(df_index, on='date') for df in df_list ]
-
-        #--------------------------------------------------------------------------
-        # Generate symbol indicators.
-        #--------------------------------------------------------------------------
-        # for df_symbol in df_list:
-        #     self.generate_symbol_indicators(df_symbol)
-
-        #--------------------------------------------------------------------------
-        # Generate symbol indicators in parallel.
-        #--------------------------------------------------------------------------
-        pool = mp.Pool(mp.cpu_count()-2)
-        df_list = pool.map(self.generate_symbol_indicators, df_list)
-        pool.close()
-
-        #--------------------------------------------------------------------------
-        # Combine all symbol dataframes together.
-        #--------------------------------------------------------------------------
-        df = pd.concat(df_list, ignore_index=True)
-
-        #--------------------------------------------------------------------------
-        # Convert date column to type numpy datetime64.
-        #--------------------------------------------------------------------------
-        df.date = pd.to_datetime(df.date)
-
-        #--------------------------------------------------------------------------
-        # Write to csv.
-        #--------------------------------------------------------------------------
-        df.to_csv("{}/algo_turtle_indicators.csv".format(CSV_ROOT_PATH), index=False)
-
         return df
 
 
@@ -176,81 +132,6 @@ class pandas_algo_turtle(object):
         df.date = pd.to_datetime(df.date)
 
         return df
-
-
-    @staticmethod
-    def momentum_score(time_series):
-        # Exponential model: y = a * e^(b*x)
-        # Linear model: y = a * x + b
-
-        # Requires data of previous rolling window, 125 days by default.
-        x = np.arange(MOMENTUM_WINDOW)
-
-        #----------------------------------------------------------------------
-        # Sanity check: Scipy curve fit.
-        #----------------------------------------------------------------------
-        try:
-            popt, pcov = curve_fit(lambda x, a, b: a*np.exp(b*x), x, time_series, p0=(EXP_MODEL_GUESS_A, EXP_MODEL_GUESS_B))
-            a = popt[0]
-            b = popt[1]
-            fitted_curve = lambda x: a*np.exp(b*x)
-
-            #----------------------------------------------------------------------
-            # Sanity check: Numpy polyfit with weights.
-            # Log exponential model: ln y = ln a + b*x
-            # Rewrite as y' = a' + b*x
-            #----------------------------------------------------------------------
-            # log_ts = np.log(time_series)
-            # weights = np.sqrt(time_series)
-            # b, a = np.polyfit(x, log_ts, 1, w=weights)
-            # plt.figure()
-            # plt.plot(x, (lambda x, a, b: np.exp(a) * np.exp(b*x))(x, a, b), label="polyfit weights")
-            # plt.legend()
-            # plt.show()
-
-            #----------------------------------------------------------------------
-            # Sanity check: Numpy polyfit without weights.
-            #----------------------------------------------------------------------
-            # log_ts = np.log(time_series)
-            # weights = np.sqrt(time_series)
-            # b, a = np.polyfit(x, log_ts, 1)
-            # plt.figure()
-            # plt.plot(x, (lambda x, a, b: np.exp(a) * np.exp(b*x))(x, a, b), label="polyfit")
-            # plt.legend()
-            # plt.show()
-
-            #----------------------------------------------------------------------
-            # Calculate coefficient of determination.
-            #----------------------------------------------------------------------
-            y = np.fromfunction(fitted_curve, x.shape)
-
-            ss_res = np.sum((time_series - y) ** 2)
-            ss_tot = np.sum((time_series - np.mean(time_series)) ** 2)
-            r2 = 1 - (ss_res / ss_tot)
-
-            #----------------------------------------------------------------------
-            # Momentum score.
-            #----------------------------------------------------------------------
-            if r2 < 0:
-                # Discard regression result where coefficient of determination is negative.
-                score = np.nan
-            else:
-                score = (np.power(1+b, YEARLY_TRADING_DAYS) - 1) * 100 * r2
-
-            #----------------------------------------------------------------------
-            # Sanity check: Animate the change of curve.
-            #----------------------------------------------------------------------
-            # fig = plt.figure()
-            # plt.plot(x, time_series, '.', label="close")
-            # plt.plot(x, (lambda x, a, b: a * np.exp(b*x))(x, a, b), label="curve fit")
-            # plt.legend()
-            # plt.title("a:{:.2f} b:{:.4f} r2:{:.2f} momentum:{:.2f}".format(a, b, r2, score))
-            # plt.show()
-            # plt.close(fig)
-
-            return score
-        except:
-            return np.nan
 
 
     #--------------------------------------------------------------------------
@@ -943,8 +824,6 @@ class pandas_algo_turtle(object):
 
     def generate_all_trading_data(self, df, start_date_str, end_date_str):
 
-        df.sort_values(by=["date", "symbol"], inplace=True)
-
         #--------------------------------------------------------------------------
         # Generate trading data.
         #--------------------------------------------------------------------------
@@ -1018,39 +897,6 @@ class pandas_algo_turtle(object):
         Return:
         df (DataFrame): Original data with extra indicator columns + trading columns.
         """
-
-        #--------------------------------------------------------------------------
-        # Rank qualified stocks by momentum.
-        #--------------------------------------------------------------------------
-        print("[{}] [INFO] Ranking qualified stock universe by momentum...".format(datetime.now().isoformat()))
-
-        # Rank only qualified stocks.
-        df["turtle_rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(~df.in_sp500_start.isna()).groupby("date")["momentum_score"].rank(ascending=False)
-        # df["turtle_rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(
-        #     (df.disqualify_penny == 0)
-        #     & (df.disqualify_expensive == 0)
-        #     & (df.disqualify_volatile == 0)
-        #     & (df.disqualify_stale == 0)
-        #     & (~df.in_sp500_start.isna())
-        # ).groupby("date")["momentum_score"].rank(ascending=False)
-
-        # Rank all stocks.
-        # df["turtle_rank"] = df.groupby("date")["momentum_score"].rank(ascending=False)
-
-        #--------------------------------------------------------------------------
-        # Calculate stock weights.
-        #--------------------------------------------------------------------------
-        print("[{}] [INFO] Calculating stock weights...".format(datetime.now().isoformat()))
-
-        # Testing. Delete me.
-        # Bias cheap symbols.
-        # df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_atr / group.inv_atr.sum())
-
-        # Proper.
-        df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_std / group.inv_std.sum())
-
-        # Equal weights.
-        # df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.turtle_rank / group.turtle_rank  / group.shape[0])
 
         #--------------------------------------------------------------------------
         # Generate symbol trading data.

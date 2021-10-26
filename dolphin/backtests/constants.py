@@ -17,18 +17,12 @@ TRADE_MONTHLY = "trade_monthly"
 # Turtle algo parameters.
 #--------------------------------------------------------------------------
 YEARLY_TRADING_DAYS = 252
-MOMENTUM_WINDOW = 125
 MIN_MOMENTUM_SCORE = 40
-PORTFOLIO_NUM_STOCK = 10
 
 INITIAL_CAPITAL = 100000
 
 # Replaced by inverse volatility.
 DOLLAR_VOL_PCT = 2
-
-# Exponential model: y = a * exp(b*x)
-EXP_MODEL_GUESS_A = 4
-EXP_MODEL_GUESS_B = 0.1
 
 # Round ATR.
 MODEL_PRECISION = 4

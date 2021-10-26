@@ -16,9 +16,10 @@ class Algo:
         2. Entry + Exit
         3. Position size.
 
-    Algo needs to do the following before a backtest can be run:
+    An algo needs to execute the following steps before a backtest:
+        1. Generate market indicators.
+        2. Append market indicators to symbol dataframe.
         1. Generate symbol indicators.
-        2. Generate market indicators.
         3. Rank symbols.
         4. Assign weights.
 
@@ -59,6 +60,10 @@ class Algo:
         raise NotImplementedError("Need to implement sell_signal() method.")
 
 
+    def rank_symbols(self):
+        raise NotImplementedError("Need to implement rank_symbols() method.")
+
+
     def calculate_symbol_weights(self):
         raise NotImplementedError("Need to implement calculate_symbol_weights() method.")
 
@@ -66,30 +71,60 @@ class Algo:
     #--------------------------------------------------------------------------
     # Methods.
     #--------------------------------------------------------------------------
+    def generate_market_indicators(self, df_market):
+
+        print("[{}] [INFO] Generating market indicators: {}".format(datetime.now().isoformat(), df_market.symbol.iloc[0]))
+        for indicator_method in self.market_indicator_list:
+            indicator_method(df_market)
+
+        return df_market
+
+
+    def append_market_indicators_to_symbol(self, df_symbol_list, df_market):
+        df_symbol_list = [ df.join(df_market, on='date') for df in df_symbol_list ]
+        return df_symbol_list
+
+
     def generate_symbol_indicators(self, df_symbol):
 
-        print("[{}] [INFO] Generating indicators for symbol: {}".format(datetime.now().isoformat(), df_symbol.symbol.iloc[0]))
-
-        #--------------------------------------------------------------------------
-        # Exponential regression.
-        #--------------------------------------------------------------------------
-        try:
-            df_symbol["momentum_score"] = df_symbol["split_adjusted_close"].rolling(MOMENTUM_WINDOW).apply(pandas_algo_turtle.momentum_score, raw=True)
-            df_symbol["momentum_score"] = df_symbol["momentum_score"].replace(np.inf, np.nan)
-        except:
-            print("[{}] [ERROR] Cannot calculate momentum score for symbol: {}.".format(datetime.now().isoformat(), df_symbol.symbol.iloc[0]))
-            raise
-
-        #--------------------------------------------------------------------------
-        # Disqualify filter.
-        #--------------------------------------------------------------------------
-        # Disqualify symbols trading under $1.00.
-        df_symbol["disqualify_penny"] = (df_symbol["split_adjusted_close"] < PENNY_PRICE).astype(int)
-
-        # Disqualify symbols trading above $1000.00.
-        df_symbol["disqualify_expensive"] = (df_symbol["split_adjusted_close"] > EXPENSIVE_PRICE).astype(int)
-
-        # Disqualify symbols with 0 standard deviation.
-        df_symbol["disqualify_stale"] = (df_symbol["std"] == 0).astype(int)
+        print("[{}] [INFO] Generating symbol indicators: {}".format(datetime.now().isoformat(), df_symbol.symbol.iloc[0]))
+        for indicator_method in self.symbol_indicator_list:
+            indicator_method(df_symbol)
 
         return df_symbol
+
+
+    def generate_all_symbol_indicators(self, df_symbol_list):
+
+        # Generate symbol indicators in parallel.
+        pool = mp.Pool(mp.cpu_count()-2)
+        df_symbol_list = pool.map(self.generate_symbol_indicators, df_symbol_list)
+        pool.close()
+
+        # Combine all symbol dataframes together.
+        df_symbol_universe = pd.concat(df_symbol_list, ignore_index=True)
+        df_symbol_universe.date = pd.to_datetime(df_symbol_universe.date)
+
+        # Write to csv.
+        df_symbol_universe.to_csv("{}/algo_indicators.csv".format(CSV_ROOT_PATH), index=False)
+
+        return df_symbol_universe
+
+
+    def run_algo(self, df_symbol_list, df_market):
+
+        df_market = generate_market_indicators(df_market)
+        df_symbol_list = append_market_indicators_to_symbol(df_symbol_list, df_market)
+        df_symbol_universe = generate_all_symbol_indicators(df_symbol_list)
+        df_symbol_universe = rank_symbols(df_symbol_universe)
+        df_symbol_universe = calculate_symbol_weights(df_symbol_universe)
+
+        df_symbol_universe.sort_values(by=["date", "symbol"], inplace=True)
+
+        return df_symbol_universe
+
+
+
+
+
+
