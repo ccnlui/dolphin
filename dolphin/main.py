@@ -25,23 +25,9 @@ if __name__ == '__main__':
     backtest_service = BacktestService()
     df = backtest_service.backtest_algo(SystematicMomentum, START_DATE, END_DATE)
 
-
-    df = turtle.load_market_data_from_db(turtle.symbol_universe, START_DATE, END_DATE)
-    df = turtle.backtest_turtle_rules(df, START_DATE, END_DATE)
-
     # Write only relevant rows to CSV file.
-    df = df.loc[ (df.turtle_rank <= PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
-    df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
-
-    #--------------------------------------------------------------------------
-    # Simulate trading only.
-    #--------------------------------------------------------------------------
-    # df = turtle.load_market_data_from_csv("/home/calvin/source/dolphin/csv/algo_turtle_indicators.csv")
-    # df = turtle.backtest_turtle_rules(START_DATE, END_DATE)
-
-    # # Write only relevant rows to CSV file.
-    # df = df.loc[ (df.turtle_rank <= PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
-    # df.to_csv("{}/algo_turtle.csv".format(CSV_ROOT_PATH), index=False)
+    df = df.loc[ (df.rank <= PORTFOLIO_NUM_STOCK) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
+    df.to_csv("{}/backtest_systematic_momentum.csv".format(CSV_ROOT_PATH), index=False)
 
     #--------------------------------------------------------------------------
     # Performance analysis.

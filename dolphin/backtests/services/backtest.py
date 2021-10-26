@@ -146,7 +146,6 @@ class BacktestService(object):
     # Assumption:
     #   1. A symbol can only have at max 1 signal at any point in time
     #--------------------------------------------------------------------------
-    @staticmethod
     # @jit(nopython=True)
     def simulate_trading(
         date,
@@ -830,7 +829,7 @@ class BacktestService(object):
         return trade_id, cnt_long, qty_long, stop_loss, last_fill, avg_price, cashflow, book_value, market_value, trade_pnl, cash, equity, account_pnl
 
 
-    def generate_all_trading_data(self, df, start_date_str, end_date_str):
+    def generate_all_trading_data(self, algo, df, start_date_str, end_date_str):
 
         print("[{}] [INFO] Generating trading data...".format(datetime.now().isoformat()))
 
@@ -856,7 +855,7 @@ class BacktestService(object):
         weights = df.weights.values
 
         # Calculate positions, trade profit and loss.
-        result = pandas_algo_turtle.simulate_trading(
+        result = self.simulate_trading(
             date,
             symbol,
             split_adjusted_open,
@@ -901,7 +900,7 @@ class BacktestService(object):
         df_symbol_list = self.load_symbol_universe_data_from_db(algo.symbol_universe, start_date_str, end_date_str)
         df_market = self.load_market_benchmark_data_from_db(algo.market_benchmark, start_date_str, end_date_str)
         df = algo.prepare_for_backtest(df_symbol_list, df_market)
-        df = self.generate_all_trading_data(df, start_date_str, end_date_str)
+        df = self.generate_all_trading_data(algo, df, start_date_str, end_date_str)
 
 
     def generate_backtest_graph(self, df, start_date_str, end_date_str):
