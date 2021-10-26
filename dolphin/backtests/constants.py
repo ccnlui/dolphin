@@ -16,13 +16,6 @@ TRADE_MONTHLY = "trade_monthly"
 #--------------------------------------------------------------------------
 # Turtle algo parameters.
 #--------------------------------------------------------------------------
-TURTLE_PERIOD_ENTRY = 20
-TURTLE_PERIOD_EXIT = 10
-SINGLE_DAY_VOLATILITY_FILTER_DAYS = 90
-SINGLE_DAY_VOLATILITY_FILTER_PCT = 15
-ATR_PERIOD = 20
-ATR_SMOOTHING_FACTOR = 1 / ATR_PERIOD
-VOL_PERIOD = 20
 YEARLY_TRADING_DAYS = 252
 MOMENTUM_WINDOW = 125
 MIN_MOMENTUM_SCORE = 40
@@ -39,9 +32,6 @@ EXP_MODEL_GUESS_B = 0.1
 
 # Round ATR.
 MODEL_PRECISION = 4
-
-# Round std. Minimum is 0.1%.
-BASIS_POINT_DP = 4
 
 PENNY_PRICE = 1
 EXPENSIVE_PRICE = 10000
