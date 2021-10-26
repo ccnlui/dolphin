@@ -4,7 +4,14 @@
 # Brief: Base class of a trading algo.
 
 from datetime import datetime
+import multiprocessing as mp
+import pathos.multiprocessing as pmp
+import pandas as pd
+
 from backtests.exceptions import NotImplementedError
+from backtests.constants import (
+    CSV_ROOT_PATH,
+)
 
 
 class Algo:
@@ -78,7 +85,6 @@ class Algo:
     def generate_market_indicators(self, df_market):
 
         print("[{}] [INFO] Generating market indicators: {}".format(datetime.now().isoformat(), df_market.symbol.iloc[0]))
-        import ipdb; ipdb.set_trace()
         for indicator_method in self.market_indicator_list:
             indicator_method(df_market)
 
@@ -102,9 +108,13 @@ class Algo:
     def generate_all_symbol_indicators(self, df_symbol_list):
 
         # Generate symbol indicators in parallel.
-        pool = mp.Pool(mp.cpu_count()-2)
+        # pool = mp.Pool(mp.cpu_count()-2)
+        pool = pmp.Pool(pmp.cpu_count()-2)
         df_symbol_list = pool.map(self.generate_symbol_indicators, df_symbol_list)
         pool.close()
+
+        # for df_symbol in df_symbol_list:
+        #     self.generate_symbol_indicators(df_symbol)
 
         # Combine all symbol dataframes together.
         df_symbol_universe = pd.concat(df_symbol_list, ignore_index=True)
@@ -119,6 +129,7 @@ class Algo:
     def prepare_for_backtest(self, df_symbol_list, df_market):
 
         df_market = self.generate_market_indicators(df_market)
+        import ipdb; ipdb.set_trace()
         df_symbol_list = self.append_market_indicators_to_symbol(df_symbol_list, df_market)
         df_symbol_universe = self.generate_all_symbol_indicators(df_symbol_list)
         df_symbol_universe = self.rank_symbols(df_symbol_universe)

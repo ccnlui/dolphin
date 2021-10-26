@@ -31,8 +31,6 @@ import os
 import empyrical as em
 import pyfolio.timeseries as pt
 
-import multiprocessing as mp
-
 import csv
 import bisect
 
@@ -1366,7 +1364,7 @@ class BacktestService(object):
 
 
     def dump_trading_data(self, df, portfolio_num_stock):
-        df = df.loc[ (df.rank <= portfolio_num_stock) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
+        df = df.loc[ (df['rank'] <= portfolio_num_stock) | (~df.market_value.isna()) | (~df.cashflow.isna()) ]
         df.to_csv("{}/backtest_systematic_momentum.csv".format(CSV_ROOT_PATH), index=False)
 
 

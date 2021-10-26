@@ -3,10 +3,13 @@
 #    By: Calvin
 # Brief: Systematic momentum trading algo.
 
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.stats import stats
 import numpy as np
+import pandas as pd
 
 from backtests.algos.algo import Algo
 from backtests.services.market_data import get_sp500_symbols_list
@@ -72,12 +75,12 @@ def generate_price_pct_change_std_and_inv_std(df_ohlc):
     Create std and inv_std as additional columns on symbol dataframe.
     """
     # Calculate standard deviation.
-    df_symbol["std"] = df_symbol["split_adjusted_close"].pct_change().rolling(VOL_PERIOD).std()
-    df_symbol["std"] = df_symbol["std"].round(BASIS_POINT_DP)
+    df_ohlc["std"] = df_ohlc["split_adjusted_close"].pct_change().rolling(VOL_PERIOD).std()
+    df_ohlc["std"] = df_ohlc["std"].round(BASIS_POINT_DP)
 
     # Inverse standard deviation.
-    df_symbol["inv_std"] = df_symbol["std"].rdiv(1)
-    df_symbol["inv_std"] = df_symbol["inv_std"].replace(np.inf, np.nan)
+    df_ohlc["inv_std"] = df_ohlc["std"].rdiv(1)
+    df_ohlc["inv_std"] = df_ohlc["inv_std"].replace(np.inf, np.nan)
 
 
 def momentum_score(time_series):
@@ -161,8 +164,8 @@ def generate_momentum_score(df_ohlc):
     Create momentum score as additional columns on symbol dataframe.
     """
     try:
-        df_symbol["momentum_score"] = df_symbol["split_adjusted_close"].rolling(MOMENTUM_WINDOW).apply(momentum_score, raw=True)
-        df_symbol["momentum_score"] = df_symbol["momentum_score"].replace(np.inf, np.nan)
+        df_ohlc["momentum_score"] = df_ohlc["split_adjusted_close"].rolling(MOMENTUM_WINDOW).apply(momentum_score, raw=True)
+        df_ohlc["momentum_score"] = df_ohlc["momentum_score"].replace(np.inf, np.nan)
     except:
         print("[{}] [ERROR] Cannot calculate momentum score for symbol: {}.".format(datetime.now().isoformat(), df_ohlc.symbol.iloc[0]))
         raise
@@ -252,7 +255,7 @@ class SystematicMomentum(Algo):
             return False
 
         # Not rank.
-        if np.isnan(df.rank[prev_idx]) or df.rank[prev_idx] > PORTFOLIO_NUM_STOCK:
+        if np.isnan(df['rank'][prev_idx]) or df['rank'][prev_idx] > PORTFOLIO_NUM_STOCK:
             return False
 
         # Turtle entry.
@@ -292,7 +295,7 @@ class SystematicMomentum(Algo):
                 return True
 
             # Not rank.
-            if np.isnan(df.rank[prev_idx]) or df.rank[prev_idx] > PORTFOLIO_NUM_STOCK:
+            if np.isnan(df['rank'][prev_idx]) or df['rank'][prev_idx] > PORTFOLIO_NUM_STOCK:
                 return True
 
             # Volatile.
@@ -343,12 +346,12 @@ class SystematicMomentum(Algo):
         print("[{}] [INFO] Calculating stock weights...".format(datetime.now().isoformat()))
 
         # Bias cheap symbols.
-        # df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_atr / group.inv_atr.sum())
+        # df["weights"] = df.loc[ df['rank'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_atr / group.inv_atr.sum())
 
         # Proper.
-        df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_std / group.inv_std.sum())
+        df["weights"] = df.loc[ df['rank'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_std / group.inv_std.sum())
 
         # Equal weights.
-        # df["weights"] = df.loc[ df.turtle_rank <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.turtle_rank / group.turtle_rank  / group.shape[0])
+        # df["weights"] = df.loc[ df['rank'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.rank / group.rank  / group.shape[0])
 
         return df
