@@ -266,7 +266,7 @@ class SystematicMomentum(Algo):
         return False
 
 
-    def sell_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+    def sell_signal(self, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
 
             curr_idx = symbol_curr_idx[curr_symbol]
             prev_idx = symbol_prev_idx[curr_symbol]

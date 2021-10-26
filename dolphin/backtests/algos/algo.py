@@ -129,7 +129,6 @@ class Algo:
     def prepare_for_backtest(self, df_symbol_list, df_market):
 
         df_market = self.generate_market_indicators(df_market)
-        import ipdb; ipdb.set_trace()
         df_symbol_list = self.append_market_indicators_to_symbol(df_symbol_list, df_market)
         df_symbol_universe = self.generate_all_symbol_indicators(df_symbol_list)
         df_symbol_universe = self.rank_symbols(df_symbol_universe)

@@ -36,11 +36,14 @@ import bisect
 
 from backtests.constants import (
     CSV_ROOT_PATH,
-    END_DATE,
-    INITIAL_CAPITAL,
     MARKET_DATA_ROOT_PATH,
-    PREFETCH_NUM_MONTH,
     START_DATE,
+    END_DATE,
+    PREFETCH_NUM_MONTH,
+    INITIAL_CAPITAL,
+    TRADE_DAILY,
+    TRADE_WEEKLY_WEDNESDAY,
+    TRADE_MONTHLY,
 )
 
 class BacktestService(object):
@@ -806,7 +809,7 @@ class BacktestService(object):
         return trade_id, cnt_long, qty_long, stop_loss, last_fill, avg_price, cashflow, book_value, market_value, trade_pnl, cash, equity, account_pnl
 
 
-    def generate_all_trading_data(self, algo, df, start_date_str, end_date_str):
+    def generate_all_trading_data(self, algo, df, start_date, end_date):
 
         print("[{}] [INFO] Generating trading data...".format(datetime.now().isoformat()))
 
@@ -837,7 +840,7 @@ class BacktestService(object):
         #--------------------------------------------------------------------------
         curr_trade_id = 0
         curr_date = None
-        curr_cash = initial_capital
+        curr_cash = INITIAL_CAPITAL
         curr_equity = curr_cash
         curr_account_pnl = 0
         equity_bod = curr_equity
@@ -966,7 +969,7 @@ class BacktestService(object):
 
             # Account.
             curr_equity = curr_equity - prev_market_value + df.market_value[curr_idx]
-            curr_account_pnl = curr_equity - initial_capital
+            curr_account_pnl = curr_equity - INITIAL_CAPITAL
 
             # Account columns.
             df.cash[curr_idx] = curr_cash
@@ -1259,7 +1262,7 @@ class BacktestService(object):
             symbol_curr_idx[symbol_str] = idx
 
             # Insert to watchlist.
-            if rank[idx] <= algo.get_portfolio_num_stock():
+            if df['rank'][idx] <= algo.get_portfolio_num_stock():
                 # curr_watchlist.append(symbol_str)
                 bisect.insort(curr_watchlist, symbol_str)
 
@@ -1338,7 +1341,7 @@ class BacktestService(object):
                     for curr_symbol in prev_watchlist.copy():
                         curr_tick = 'C'
                         curr_price = df.split_adjusted_close[symbol_curr_idx[curr_symbol]]
-                        if buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+                        if algo.buy_signal(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
                             curr_cash, curr_equity, curr_account_pnl = buy(curr_tick, curr_date, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, curr_cash, curr_equity, curr_account_pnl, equity_bod, df)
 
                 #------------------------------------------------------------------
@@ -1356,7 +1359,10 @@ class BacktestService(object):
         df_symbol_list = self.load_symbol_universe_data_from_db(algo.symbol_universe, start_date_str, end_date_str)
         df_market = self.load_market_benchmark_data_from_db(algo.market_benchmark, start_date_str, end_date_str)
         df = algo.prepare_for_backtest(df_symbol_list, df_market)
-        df = self.generate_all_trading_data(algo, df, start_date_str, end_date_str)
+
+        start_date = pd.to_datetime(start_date_str)
+        end_date = pd.to_datetime(end_date_str)
+        df = self.generate_all_trading_data(algo, df, start_date, end_date)
 
         self.dump_trading_data(df, algo.get_portfolio_num_stock())
 

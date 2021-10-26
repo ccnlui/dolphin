@@ -7,21 +7,14 @@
 from datetime import date, time
 
 #--------------------------------------------------------------------------
-# Constants.
+# Backtest params.
 #--------------------------------------------------------------------------
 TRADE_DAILY = "trade_daily"
 TRADE_WEEKLY_WEDNESDAY = "trade_weekly_wednesday"
 TRADE_MONTHLY = "trade_monthly"
-
 YEARLY_TRADING_DAYS = 252
 
 INITIAL_CAPITAL = 100000
-
-# Replaced by inverse volatility.
-DOLLAR_VOL_PCT = 2
-
-# Round ATR.
-MODEL_PRECISION = 4
 
 START_DATE = "2011-10-26"
 END_DATE = "2020-12-31"
