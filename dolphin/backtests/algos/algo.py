@@ -67,6 +67,10 @@ class Algo:
         raise NotImplementedError("Need to implement sell_signal() method.")
 
 
+    def calculate_stop_loss(self):
+        raise NotImplementedError("Need to implement calculate_stop_loss() method.")
+
+
     def get_trade_frequency(self):
         raise NotImplementedError("Need to implement get_trade_frequency() method.")
 

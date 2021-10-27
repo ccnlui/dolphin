@@ -256,8 +256,8 @@ class SystematicMomentum(Algo):
         if df.momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
             return False
 
-        # Not rank.
-        if np.isnan(df['rank'][prev_idx]) or df['rank'][prev_idx] > PORTFOLIO_NUM_STOCK:
+        # Low ranking.
+        if np.isnan(df.ranking[prev_idx]) or df.ranking[prev_idx] > PORTFOLIO_NUM_STOCK:
             return False
 
         # Turtle entry.
@@ -296,8 +296,8 @@ class SystematicMomentum(Algo):
         if curr_price > EXPENSIVE_PRICE:
             return True
 
-        # Not rank.
-        if np.isnan(df['rank'][prev_idx]) or df['rank'][prev_idx] > PORTFOLIO_NUM_STOCK:
+        # Low ranking.
+        if np.isnan(df.ranking[prev_idx]) or df.ranking[prev_idx] > PORTFOLIO_NUM_STOCK:
             return True
 
         # Volatile.
@@ -332,8 +332,8 @@ class SystematicMomentum(Algo):
         print("[{}] [INFO] Ranking qualified stock universe by momentum...".format(datetime.now().isoformat()))
 
         # Rank only qualified stocks.
-        df["rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(~df.in_sp500_start.isna()).groupby("date")["momentum_score"].rank(ascending=False)
-        # df["rank"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(
+        df["ranking"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(~df.in_sp500_start.isna()).groupby("date")["momentum_score"].rank(ascending=False)
+        # df["ranking"] = df.loc[ :, ["date", "symbol", "momentum_score"]].where(
         #     (df.disqualify_penny == 0)
         #     & (df.disqualify_expensive == 0)
         #     & (df.disqualify_volatile == 0)
@@ -342,7 +342,7 @@ class SystematicMomentum(Algo):
         # ).groupby("date")["momentum_score"].rank(ascending=False)
 
         # Rank all stocks.
-        # df["rank"] = df.groupby("date")["momentum_score"].rank(ascending=False)
+        # df["ranking"] = df.groupby("date")["momentum_score"].rank(ascending=False)
         return df
 
 
@@ -356,12 +356,12 @@ class SystematicMomentum(Algo):
         print("[{}] [INFO] Calculating stock weights...".format(datetime.now().isoformat()))
 
         # Bias cheap symbols.
-        # df["weights"] = df.loc[ df['rank'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_atr / group.inv_atr.sum())
+        # df["weights"] = df.loc[ df['ranking'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_atr / group.inv_atr.sum())
 
         # Proper.
-        df["weights"] = df.loc[ df['rank'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_std / group.inv_std.sum())
+        df["weights"] = df.loc[ df['ranking'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.inv_std / group.inv_std.sum())
 
         # Equal weights.
-        # df["weights"] = df.loc[ df['rank'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.rank / group.rank  / group.shape[0])
+        # df["weights"] = df.loc[ df['ranking'] <= PORTFOLIO_NUM_STOCK ].groupby("date", group_keys=False).apply(lambda group: group.ranking / group.ranking  / group.shape[0])
 
         return df
