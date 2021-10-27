@@ -109,7 +109,7 @@ class Backtest:
 
         print("------------------------------------------------")
         print("[WARNING] Liquidated trade: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
-            self.curr_date,
+            self.curr_date.date().isoformat(),
             symbol,
             0,
             df.split_adjusted_close[prev_idx],
@@ -174,7 +174,7 @@ class Backtest:
 
         print("[DEBUG]  Mark-to-market {}: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
             tick,
-            self.curr_date,
+            self.curr_date.date().isoformat(),
             symbol,
             df.qty_long[curr_idx],
             price,
@@ -209,7 +209,7 @@ class Backtest:
             print("------------------------------------------------")
             print("[WARNING] Buying symbol {} with target quantity 0 on {}. ({} * {} / {})".format(
                 symbol,
-                self.curr_date,
+                self.curr_date.date().isoformat(),
                 self.equity_bod,
                 df.weights[prev_idx],
                 price
@@ -258,7 +258,7 @@ class Backtest:
 
             print("[INFO]      Enter trade {}: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
                 tick,
-                self.curr_date,
+                self.curr_date.date().isoformat(),
                 symbol,
                 df.qty_long[curr_idx],
                 price,
@@ -276,7 +276,7 @@ class Backtest:
             print("------------------------------------------------")
             print("[ERROR] Unexpected buying condition for {} on {}".format(
                 symbol,
-                self.curr_date,
+                self.curr_date.date().isoformat(),
             ))
             print("------------------------------------------------")
 
@@ -315,7 +315,7 @@ class Backtest:
 
         print("[INFO]       Exit trade {}: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
             tick,
-            self.curr_date,
+            self.curr_date.date().isoformat(),
             symbol,
             df.qty_long[curr_idx],
             price,
@@ -344,7 +344,7 @@ class Backtest:
         # Market trend filter.
         if not df.market_trend_filter[prev_idx]:
             print("[DEBUG]  Market trend down: {} Not buying {}.".format(
-                self.curr_date,
+                self.curr_date.date().isoformat(),
                 symbol,
             ))
             return self.curr_cash, self.curr_equity, self.curr_account_pnl
@@ -411,7 +411,7 @@ class Backtest:
 
         print("[INFO]        Rebalance {}: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
             tick,
-            self.curr_date,
+            self.curr_date.date().isoformat(),
             symbol,
             df.qty_long[curr_idx],
             price,
