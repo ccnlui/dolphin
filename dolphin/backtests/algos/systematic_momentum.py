@@ -17,7 +17,6 @@ from backtests.constants import (
     TRADE_DAILY,
     TRADE_MONTHLY,
     TRADE_WEEKLY_WEDNESDAY,
-    YEARLY_TRADING_DAYS,
 )
 
 #--------------------------------------------------------------------------
@@ -39,6 +38,7 @@ VOL_PERIOD                        = 20
 # Round std. Minimum is 0.1%.
 BASIS_POINT_DP                    = 4
 TRADE_FREQUENCY                   = TRADE_DAILY
+YEARLY_TRADING_DAYS               = 252
 
 PENNY_PRICE = 1
 EXPENSIVE_PRICE = 10000

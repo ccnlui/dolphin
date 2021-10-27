@@ -19,15 +19,15 @@ class Algo:
 
     Every algo, on a high level, should specify the following:
         1. Symbol universe
-        2. Entry + Exit
+        2. Entry + Exit + Stop loss.
         3. Position size.
 
     An algo needs to execute the following steps before a backtest:
         1. Generate market indicators.
         2. Append market indicators to symbol dataframe.
-        1. Generate symbol indicators.
-        3. Rank symbols.
-        4. Assign weights.
+        3. Generate symbol indicators.
+        4. Rank symbols.
+        5. Assign weights.
 
     The following should be defined as class fields in the subclass:
         - symbol_universe (List[str])

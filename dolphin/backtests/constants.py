@@ -9,11 +9,6 @@ from datetime import date, time
 #--------------------------------------------------------------------------
 # Backtest params.
 #--------------------------------------------------------------------------
-TRADE_DAILY = "trade_daily"
-TRADE_WEEKLY_WEDNESDAY = "trade_weekly_wednesday"
-TRADE_MONTHLY = "trade_monthly"
-YEARLY_TRADING_DAYS = 252
-
 INITIAL_CAPITAL = 100000
 
 START_DATE = "2011-10-26"
@@ -23,6 +18,13 @@ PREFETCH_NUM_MONTH = 12
 
 REGULAR_TRADING_HOURS_START_TIME = time.fromisoformat("09:30:00")
 REGULAR_TRADING_HOURS_END_TIME = time.fromisoformat("16:00:00")
+
+#--------------------------------------------------------------------------
+# Constants.
+#--------------------------------------------------------------------------
+TRADE_DAILY = "trade_daily"
+TRADE_WEEKLY_WEDNESDAY = "trade_weekly_wednesday"
+TRADE_MONTHLY = "trade_monthly"
 
 #--------------------------------------------------------------------------
 # File paths.
