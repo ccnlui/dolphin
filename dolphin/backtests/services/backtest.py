@@ -38,6 +38,8 @@ from backtests.services.market_data import (
     get_sp500_symbols_list,
 )
 
+from backtests.backtests.backtest import Backtest
+
 
 class BacktestService(object):
     """
@@ -705,22 +707,26 @@ class BacktestService(object):
         df_market = self.load_market_benchmark_data_from_db(algo.market_benchmark, start_date_str, end_date_str)
         df = self.prepare_data_for_backtest(algo, df_symbol_list, df_market)
 
-        start_date = pd.to_datetime(start_date_str)
-        end_date = pd.to_datetime(end_date_str)
-        df = self.simulate_trading(
-            algo,
-            df,
-            start_date,
-            end_date,
-            df.date,
-            df.symbol,
-            df.split_adjusted_open,
-            df.split_adjusted_close,
-            df.ranking,
-            df.weights
-        )
+        # Old.
+        # start_date = pd.to_datetime(start_date_str)
+        # end_date = pd.to_datetime(end_date_str)
+        # df = self.simulate_trading(
+        #     algo,
+        #     df,
+        #     start_date,
+        #     end_date,
+        #     df.date,
+        #     df.symbol,
+        #     df.split_adjusted_open,
+        #     df.split_adjusted_close,
+        #     df.ranking,
+        #     df.weights
+        # )
+        # self.dump_trading_data(df, algo.get_portfolio_num_stock())
 
-        self.dump_trading_data(df, algo.get_portfolio_num_stock())
+        # New.
+        backtest = Backtest(df, algo, start_date_str, end_date_str)
+        df = backtest.simulate_trading()
 
         return df
 

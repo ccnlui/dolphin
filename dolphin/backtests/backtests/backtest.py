@@ -9,7 +9,10 @@ import numpy as np
 import bisect
 
 from backtests.constants import (
-    INITIAL_CAPITAL
+    INITIAL_CAPITAL,
+    TRADE_DAILY,
+    TRADE_MONTHLY,
+    TRADE_WEEKLY_WEDNESDAY,
 )
 
 
@@ -26,9 +29,9 @@ class Backtest:
         self.curr_trade_id = 0
         self.curr_date = None
         self.curr_cash = INITIAL_CAPITAL
-        self.curr_equity = curr_cash
+        self.curr_equity = self.curr_cash
         self.curr_account_pnl = 0
-        self.equity_bod = curr_equity
+        self.equity_bod = self.curr_equity
         self.prev_trading_date = None
 
         self.symbol_prev_idx = {}
@@ -58,6 +61,8 @@ class Backtest:
 
 
     def is_trading_day(self):
+
+        algo = self.algo
 
         if algo.get_trade_frequency() == TRADE_DAILY:
             return True
@@ -133,54 +138,54 @@ class Backtest:
 
         # Carry over if rows are empty at open.
         if tick == 'O':
-            df.trade_id[curr_idx] = df.trade_id[prev_idx]
-            df.cnt_long[curr_idx] = df.cnt_long[prev_idx]
-            df.qty_long[curr_idx] = df.qty_long[prev_idx]
-            df.stop_loss[curr_idx] = df.stop_loss[prev_idx]
-            df.last_fill[curr_idx] = df.last_fill[prev_idx]
-            df.avg_price[curr_idx] = df.avg_price[prev_idx]
-            df.cashflow[curr_idx] = 0
-            df.book_value[curr_idx] = df.book_value[prev_idx]
-            df.market_value[curr_idx] = df.market_value[prev_idx]
-            df.trade_pnl[curr_idx] = df.trade_pnl[prev_idx]
+            df.trade_id.iat[curr_idx] = df.trade_id[prev_idx]
+            df.cnt_long.iat[curr_idx] = df.cnt_long[prev_idx]
+            df.qty_long.iat[curr_idx] = df.qty_long[prev_idx]
+            df.stop_loss.iat[curr_idx] = df.stop_loss[prev_idx]
+            df.last_fill.iat[curr_idx] = df.last_fill[prev_idx]
+            df.avg_price.iat[curr_idx] = df.avg_price[prev_idx]
+            df.cashflow.iat[curr_idx] = 0
+            df.book_value.iat[curr_idx] = df.book_value[prev_idx]
+            df.market_value.iat[curr_idx] = df.market_value[prev_idx]
+            df.trade_pnl.iat[curr_idx] = df.trade_pnl[prev_idx]
 
         # Trade columns.
-        # df.trade_id[curr_idx]
-        # df.cnt_long[curr_idx]
-        # df.qty_long[curr_idx]
-        # df.stop_loss[curr_idx]
-        # df.last_fill[curr_idx]
-        # df.avg_price[curr_idx]
+        # df.trade_id.iat[curr_idx]
+        # df.cnt_long.iat[curr_idx]
+        # df.qty_long.iat[curr_idx]
+        # df.stop_loss.iat[curr_idx]
+        # df.last_fill.iat[curr_idx]
+        # df.avg_price.iat[curr_idx]
 
-        # df.cashflow[curr_idx]
-        # df.book_value[curr_idx]
-        prev_market_value = df.market_value[curr_idx]
-        df.market_value[curr_idx] = price * df.qty_long[curr_idx]
-        df.trade_pnl[curr_idx] = df.market_value[curr_idx] - df.book_value[curr_idx]
+        # df.cashflow.iat[curr_idx]
+        # df.book_value.iat[curr_idx]
+        prev_market_value = df.market_value.iat[curr_idx]
+        df.market_value[curr_idx] = price * df.qty_long.iat[curr_idx]
+        df.trade_pnl[curr_idx] = df.market_value[curr_idx] - df.book_value.iat[curr_idx]
 
         # Account.
-        self.curr_equity = self.curr_equity - prev_market_value + df.market_value[curr_idx]
+        self.curr_equity = self.curr_equity - prev_market_value + df.market_value.iat[curr_idx]
         self.curr_account_pnl = self.curr_equity - INITIAL_CAPITAL
 
         # Account columns.
-        df.cash[curr_idx] = self.curr_cash
-        df.equity[curr_idx] = self.curr_equity
-        df.account_pnl[curr_idx] = self.curr_account_pnl
+        df.cash.iat[curr_idx] = self.curr_cash
+        df.equity.iat[curr_idx] = self.curr_equity
+        df.account_pnl.iat[curr_idx] = self.curr_account_pnl
 
         print("[DEBUG]  Mark-to-market {}: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
             tick,
             self.curr_date,
             symbol,
-            qty_long[curr_idx],
+            df.qty_long[curr_idx],
             price,
-            cashflow[curr_idx],
-            book_value[curr_idx],
-            avg_price[curr_idx],
-            market_value[curr_idx],
-            curr_cash,
-            curr_equity,
-            curr_account_pnl,
-            trade_pnl[curr_idx]
+            df.cashflow[curr_idx],
+            df.book_value[curr_idx],
+            df.avg_price[curr_idx],
+            df.market_value[curr_idx],
+            self.curr_cash,
+            self.curr_equity,
+            self.curr_account_pnl,
+            df.trade_pnl[curr_idx]
         ))
 
     def buy(self, tick, symbol, price):
@@ -193,6 +198,7 @@ class Backtest:
         """
 
         df = self.df
+        algo = self.algo
 
         curr_idx = self.symbol_curr_idx[symbol]
         prev_idx = self.symbol_prev_idx[symbol]
@@ -214,35 +220,35 @@ class Backtest:
 
             # Initialize columns in case they are empty.
             if np.isnan(df.trade_id[curr_idx]):
-                df.cashflow[curr_idx] = 0
-                df.book_value[curr_idx] = 0
-                df.market_value[curr_idx] = 0
-                df.trade_pnl[curr_idx] = 0
-                df.trade_id[curr_idx] = self.new_trade_id()
-                df.cnt_long[curr_idx] = 0
-                df.qty_long[curr_idx] = 0
-                df.stop_loss[curr_idx] = 0
-                df.last_fill[curr_idx] = 0
-                df.avg_price[curr_idx] = 0
+                df.cashflow.iat[curr_idx] = 0
+                df.book_value.iat[curr_idx] = 0
+                df.market_value.iat[curr_idx] = 0
+                df.trade_pnl.iat[curr_idx] = 0
+                df.trade_id.iat[curr_idx] = self.new_trade_id()
+                df.cnt_long.iat[curr_idx] = 0
+                df.qty_long.iat[curr_idx] = 0
+                df.stop_loss.iat[curr_idx] = 0
+                df.last_fill.iat[curr_idx] = 0
+                df.avg_price.iat[curr_idx] = 0
 
             # Account.
             self.curr_cash -= price * target_qty_long
 
-            df.cash[curr_idx] = self.curr_cash
-            df.equity[curr_idx] = self.curr_equity
-            df.account_pnl[curr_idx] = self.curr_account_pnl
+            df.cash.iat[curr_idx] = self.curr_cash
+            df.equity.iat[curr_idx] = self.curr_equity
+            df.account_pnl.iat[curr_idx] = self.curr_account_pnl
 
             # Trade columns.
-            df.cashflow[curr_idx] -= price * target_qty_long
-            df.book_value[curr_idx] += price * target_qty_long
-            df.market_value[curr_idx] += price * target_qty_long
-            df.trade_pnl[curr_idx] = df.market_value[curr_idx] - df.book_value[curr_idx]
+            df.cashflow.iat[curr_idx] -= price * target_qty_long
+            df.book_value.iat[curr_idx] += price * target_qty_long
+            df.market_value.iat[curr_idx] += price * target_qty_long
+            df.trade_pnl[curr_idx] = df.market_value[curr_idx] - df.book_value.iat[curr_idx]
 
-            df.cnt_long[curr_idx] = 1
-            df.qty_long[curr_idx] += target_qty_long
-            df.stop_loss[curr_idx] = algo.calculate_stop_loss(symbol, price, symbol_curr_idx, symbol_prev_idx, self.df)
-            df.last_fill[curr_idx] = price
-            df.avg_price[curr_idx] = df.book_value[curr_idx] / df.qty_long[curr_idx]
+            df.cnt_long.iat[curr_idx] = 1
+            df.qty_long.iat[curr_idx] += target_qty_long
+            df.stop_loss.iat[curr_idx] = algo.calculate_stop_loss(symbol, price, self.symbol_curr_idx, self.symbol_prev_idx, self.df)
+            df.last_fill.iat[curr_idx] = price
+            df.avg_price[curr_idx] = df.book_value[curr_idx] / df.qty_long.iat[curr_idx]
 
             # Add to portfolio if not exist.
             if self.portfolio_symbol.count(symbol) == 0:
@@ -285,25 +291,25 @@ class Backtest:
         self.curr_cash += price * df.qty_long[curr_idx]
 
         # Trade columns.
-        df.cashflow[curr_idx] += price * df.qty_long[curr_idx]
-        df.book_value[curr_idx] -= price * df.qty_long[curr_idx]
-        df.market_value[curr_idx] = 0
+        df.cashflow.iat[curr_idx] += price * df.qty_long[curr_idx]
+        df.book_value.iat[curr_idx] -= price * df.qty_long[curr_idx]
+        df.market_value.iat[curr_idx] = 0
 
         # Close remaining book value as trade profit and loss.
-        df.trade_pnl[curr_idx] = df.book_value[curr_idx] * -1
-        df.book_value[curr_idx] = 0
+        df.trade_pnl.iat[curr_idx] = df.book_value[curr_idx] * -1
+        df.book_value.iat[curr_idx] = 0
 
-        # df.trade_id[curr_idx]
-        df.cnt_long[curr_idx] = 0
-        df.qty_long[curr_idx] = 0
-        df.stop_loss[curr_idx] = 0
-        df.last_fill[curr_idx] = price
-        df.avg_price[curr_idx] = 0
+        # df.trade_id.iat[curr_idx]
+        df.cnt_long.iat[curr_idx] = 0
+        df.qty_long.iat[curr_idx] = 0
+        df.stop_loss.iat[curr_idx] = 0
+        df.last_fill.iat[curr_idx] = price
+        df.avg_price.iat[curr_idx] = 0
 
         # Account columns (no change).
-        df.cash[curr_idx] = self.curr_cash
-        df.equity[curr_idx] = self.curr_equity
-        df.account_pnl[curr_idx] = self.curr_account_pnl
+        df.cash.iat[curr_idx] = self.curr_cash
+        df.equity.iat[curr_idx] = self.curr_equity
+        df.account_pnl.iat[curr_idx] = self.curr_account_pnl
 
         self.portfolio_symbol.remove(symbol)
 
@@ -347,61 +353,61 @@ class Backtest:
         if delta_qty_long > 0:
 
             # Trade columns.
-            df.cashflow[curr_idx] -= price * delta_qty_long
-            df.book_value[curr_idx] += price * delta_qty_long
-            df.market_value[curr_idx] += price * delta_qty_long
-            df.trade_pnl[curr_idx] = df.market_value[curr_idx] - df.book_value[curr_idx]
+            df.cashflow.iat[curr_idx] -= price * delta_qty_long
+            df.book_value.iat[curr_idx] += price * delta_qty_long
+            df.market_value.iat[curr_idx] += price * delta_qty_long
+            df.trade_pnl.iat[curr_idx] = df.market_value[curr_idx] - df.book_value[curr_idx]
 
-            # df.trade_id[curr_idx]
-            # df.cnt_long[curr_idx]
-            df.qty_long[curr_idx] += delta_qty_long
-            # df.stop_loss[curr_idx]
-            df.last_fill[curr_idx] = price
-            df.avg_price[curr_idx] = df.book_value[curr_idx] / df.qty_long[curr_idx]
+            # df.trade_id.iat[curr_idx]
+            # df.cnt_long.iat[curr_idx]
+            df.qty_long.iat[curr_idx] += delta_qty_long
+            # df.stop_loss.iat[curr_idx]
+            df.last_fill.iat[curr_idx] = price
+            df.avg_price.iat[curr_idx] = df.book_value[curr_idx] / df.qty_long[curr_idx]
 
         # Sell position.
         if delta_qty_long < 0:
 
             if target_qty_long == 0:
                 # Trade columns.
-                df.cashflow[curr_idx] -= price * delta_qty_long
-                df.book_value[curr_idx] += price * delta_qty_long
-                df.market_value[curr_idx] = 0
+                df.cashflow.iat[curr_idx] -= price * delta_qty_long
+                df.book_value.iat[curr_idx] += price * delta_qty_long
+                df.market_value.iat[curr_idx] = 0
 
                 # Close remaining book value as trade profit and loss.
-                df.trade_pnl[curr_idx] = df.book_value[curr_idx] * -1
-                df.book_value[curr_idx] = 0
+                df.trade_pnl.iat[curr_idx] = df.book_value[curr_idx] * -1
+                df.book_value.iat[curr_idx] = 0
 
-                # df.trade_id[curr_idx]
-                df.cnt_long[curr_idx] = 0
-                df.qty_long[curr_idx] = 0
-                df.stop_loss[curr_idx] = 0
-                df.last_fill[curr_idx] = price
-                df.avg_price[curr_idx] = 0
+                # df.trade_id.iat[curr_idx]
+                df.cnt_long.iat[curr_idx] = 0
+                df.qty_long.iat[curr_idx] = 0
+                df.stop_loss.iat[curr_idx] = 0
+                df.last_fill.iat[curr_idx] = price
+                df.avg_price.iat[curr_idx] = 0
 
                 self.portfolio_symbol.remove(symbol)
 
             else:
                 # Trade columns.
-                df.cashflow[curr_idx] -= price * delta_qty_long
-                df.book_value[curr_idx] += price * delta_qty_long
-                df.market_value[curr_idx] += price * delta_qty_long
-                df.trade_pnl[curr_idx] = df.market_value[curr_idx] - df.book_value[curr_idx]
+                df.cashflow.iat[curr_idx] -= price * delta_qty_long
+                df.book_value.iat[curr_idx] += price * delta_qty_long
+                df.market_value.iat[curr_idx] += price * delta_qty_long
+                df.trade_pnl.iat[curr_idx] = df.market_value[curr_idx] - df.book_value[curr_idx]
 
-                # df.trade_id[curr_idx]
-                # df.cnt_long[curr_idx]
-                df.qty_long[curr_idx] += delta_qty_long
-                # df.stop_loss[curr_idx]
-                df.last_fill[curr_idx] = price
-                df.avg_price[curr_idx] = df.book_value[curr_idx] / df.qty_long[curr_idx]
+                # df.trade_id.iat[curr_idx]
+                # df.cnt_long.iat[curr_idx]
+                df.qty_long.iat[curr_idx] += delta_qty_long
+                # df.stop_loss.iat[curr_idx]
+                df.last_fill.iat[curr_idx] = price
+                df.avg_price.iat[curr_idx] = df.book_value[curr_idx] / df.qty_long[curr_idx]
 
         # Account.
         self.curr_cash += df.cashflow[curr_idx]
 
         # Account columns.
-        df.cash[curr_idx] = self.curr_cash
-        df.equity[curr_idx] = self.curr_equity
-        df.account_pnl[curr_idx] = self.curr_account_pnl
+        df.cash.iat[curr_idx] = self.curr_cash
+        df.equity.iat[curr_idx] = self.curr_equity
+        df.account_pnl.iat[curr_idx] = self.curr_account_pnl
 
         print("[INFO]        Rebalance {}: {} {} {}@{:.4f} shares, cashflow {:.4f}, book value {:.4f}, avg price {:.4f}, market value {:.4f}, cash {:.4f}, equity {:.4f}, acount pnl {:.4f}, trade pnl {:.4f}".format(
             tick,
@@ -448,7 +454,7 @@ class Backtest:
             #------------------------------------------------------------------
             # Read in symbol data.
             #------------------------------------------------------------------
-            symbol_str = str(symbol[idx])
+            symbol_str = str(df.symbol[idx])
             self.symbol_curr_idx[symbol_str] = idx
 
             # Insert to watchlist.
@@ -463,7 +469,7 @@ class Backtest:
             #------------------------------------------------------------------
             # Trading.
             #------------------------------------------------------------------
-            if self.in_backtest_period(self.curr_date, self.start_date, self.end_date):
+            if self.in_backtest_period():
 
                 #------------------------------------------------------------------
                 # Pre-market: liquidate symbols not available for trading.
@@ -508,7 +514,7 @@ class Backtest:
                         tick = 'O'
                         price = df.split_adjusted_open[self.symbol_curr_idx[symbol]]
                         if algo.buy_signal(symbol, price, self.symbol_curr_idx, self.symbol_prev_idx, df):
-                            buy(tick, symbol, price)
+                            self.buy(tick, symbol, price)
 
                 #------------------------------------------------------------------
                 # Close: Mark-to-market.
