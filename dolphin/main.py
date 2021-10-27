@@ -13,9 +13,8 @@ from backtests.algos.systematic_momentum import SystematicMomentum
 # Entry point.
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
-    #--------------------------------------------------------------------------
-    # Measure execution time.
-    #--------------------------------------------------------------------------
+
+    # Timer starts.
     start_time = datetime.now()
 
     #--------------------------------------------------------------------------
@@ -36,9 +35,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # backtest_service.generate_symbol_graph("MJRC", START_DATE, END_DATE)
 
-    #--------------------------------------------------------------------------
-    # Measure execution time.
-    #--------------------------------------------------------------------------
+    # Timer ends.
     end_time = datetime.now()
     elapsed_sec = (end_time - start_time).total_seconds()
 
