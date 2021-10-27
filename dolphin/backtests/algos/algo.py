@@ -5,7 +5,6 @@
 
 from datetime import datetime
 import multiprocessing as mp
-import pathos.multiprocessing as pmp
 import pandas as pd
 
 from backtests.exceptions import NotImplementedError
@@ -112,8 +111,7 @@ class Algo:
     def generate_all_symbol_indicators(self, df_symbol_list):
 
         # Generate symbol indicators in parallel.
-        # pool = mp.Pool(mp.cpu_count()-2)
-        pool = pmp.Pool(pmp.cpu_count()-2)
+        pool = mp.Pool(mp.cpu_count()-2)
         df_symbol_list = pool.map(self.generate_symbol_indicators, df_symbol_list)
         pool.close()
 
