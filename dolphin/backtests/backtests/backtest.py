@@ -188,10 +188,11 @@ class Backtest:
             df.trade_pnl[curr_idx]
         ))
 
+
     def buy(self, tick, symbol, price):
         """
         Enter position using latest indicators calculated using prices until last close.
-        
+
         Current limitations:
             - Cannot buy multiple times in 1 day
             - Cannot buy if sold symbol earlier the same day

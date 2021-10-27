@@ -130,9 +130,9 @@ class BacktestService(object):
 
         return df_symbol_universe
 
-    
+
     def backtest_algo(self, algo_type, start_date_str=None, end_date_str=None):
-        
+
         algo = algo_type()
         df_symbol_list = self.load_symbol_universe_data_from_db(algo.symbol_universe, start_date_str, end_date_str)
         df_market = self.load_market_benchmark_data_from_db(algo.market_benchmark, start_date_str, end_date_str)
