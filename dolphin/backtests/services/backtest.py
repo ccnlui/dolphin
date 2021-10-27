@@ -4,13 +4,6 @@
 #       Brief: Backtest app.
 # Requirement: Python 3.8
 
-from backtests.services.market_data import (
-    get_symbol_list_daily_split_adjusted_df_list,
-    get_daily_split_adjusted_df,
-    get_sp500_symbols_list,
-)
-from backtests.constants import cboe_holidays
-
 import pandas as pd
 import numpy as np
 from plotly.subplots import make_subplots
@@ -36,7 +29,15 @@ from backtests.constants import (
     TRADE_DAILY,
     TRADE_WEEKLY_WEDNESDAY,
     TRADE_MONTHLY,
+    cboe_holidays,
 )
+
+from backtests.services.market_data import (
+    get_symbol_list_daily_split_adjusted_df_list,
+    get_daily_split_adjusted_df,
+    get_sp500_symbols_list,
+)
+
 
 class BacktestService(object):
     """
