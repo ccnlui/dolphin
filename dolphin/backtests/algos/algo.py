@@ -135,6 +135,7 @@ class Algo:
         df_symbol_universe = self.calculate_symbol_weights(df_symbol_universe)
 
         df_symbol_universe.sort_values(by=["date", "symbol"], inplace=True)
+        df_symbol_universe.reset_index(inplace=True)
 
         return df_symbol_universe
 

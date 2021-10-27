@@ -15,6 +15,8 @@ from backtests.algos.algo import Algo
 from backtests.services.market_data import get_sp500_symbols_list
 from backtests.constants import (
     TRADE_DAILY,
+    TRADE_MONTHLY,
+    TRADE_WEEKLY_WEDNESDAY,
     YEARLY_TRADING_DAYS,
 )
 
