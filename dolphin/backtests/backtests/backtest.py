@@ -243,13 +243,13 @@ class Backtest:
             df.cashflow.iat[curr_idx] -= price * target_qty_long
             df.book_value.iat[curr_idx] += price * target_qty_long
             df.market_value.iat[curr_idx] += price * target_qty_long
-            df.trade_pnl[curr_idx] = df.market_value[curr_idx] - df.book_value.iat[curr_idx]
+            df.trade_pnl.iat[curr_idx] = df.market_value[curr_idx] - df.book_value[curr_idx]
 
             df.cnt_long.iat[curr_idx] = 1
             df.qty_long.iat[curr_idx] += target_qty_long
             df.stop_loss.iat[curr_idx] = algo.calculate_stop_loss(symbol, price, self.symbol_curr_idx, self.symbol_prev_idx, self.df)
             df.last_fill.iat[curr_idx] = price
-            df.avg_price[curr_idx] = df.book_value[curr_idx] / df.qty_long.iat[curr_idx]
+            df.avg_price.iat[curr_idx] = df.book_value[curr_idx] / df.qty_long[curr_idx]
 
             # Add to portfolio if not exist.
             if self.portfolio_symbol.count(symbol) == 0:
