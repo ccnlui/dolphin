@@ -31,7 +31,7 @@ class Backtest:
         self.curr_cash = INITIAL_CAPITAL
         self.curr_equity = self.curr_cash
         self.curr_account_pnl = 0
-        self.equity_bod = self.curr_equity
+        self.curr_equity_bod = self.curr_equity
         self.prev_trading_date = None
 
         self.symbol_prev_idx = {}
@@ -204,14 +204,14 @@ class Backtest:
         curr_idx = self.symbol_curr_idx[symbol]
         prev_idx = self.symbol_prev_idx[symbol]
 
-        target_qty_long = np.floor(self.equity_bod * df.weights[prev_idx] / price)
+        target_qty_long = np.floor(self.curr_equity_bod * df.weights[prev_idx] / price)
 
         if target_qty_long == 0:
             print("------------------------------------------------")
             print("[WARNING] Buying symbol {} with target quantity 0 on {}. ({} * {} / {})".format(
                 symbol,
                 self.curr_date.date().isoformat(),
-                self.equity_bod,
+                self.curr_equity_bod,
                 df.weights[prev_idx],
                 price
             ))
@@ -339,7 +339,7 @@ class Backtest:
         prev_idx = self.symbol_prev_idx[symbol]
 
         # Rebalance trade.
-        target_qty_long = np.floor(self.equity_bod * df.weights[prev_idx] / price)
+        target_qty_long = np.floor(self.curr_equity_bod * df.weights[prev_idx] / price)
         delta_qty_long = target_qty_long - df.qty_long[curr_idx]
 
         # Market trend filter.
@@ -489,12 +489,12 @@ class Backtest:
                 #------------------------------------------------------------------
                 # Open: Mark-to-market.
                 #------------------------------------------------------------------
-                self.equity_bod = self.curr_equity
+                self.curr_equity_bod = self.curr_equity
                 for symbol in self.portfolio_symbol:
                     tick = 'O'
                     price = df.split_adjusted_open[self.symbol_curr_idx[symbol]]
                     self.mark_to_market(tick, symbol, price)
-                    self.equity_bod = self.curr_equity
+                    self.curr_equity_bod = self.curr_equity
 
                 #------------------------------------------------------------------
                 # Open: Sell, rebalance, buy.
