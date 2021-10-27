@@ -159,12 +159,12 @@ class Backtest:
 
         # df.cashflow.iat[curr_idx]
         # df.book_value.iat[curr_idx]
-        prev_market_value = df.market_value.iat[curr_idx]
-        df.market_value[curr_idx] = price * df.qty_long.iat[curr_idx]
-        df.trade_pnl[curr_idx] = df.market_value[curr_idx] - df.book_value.iat[curr_idx]
+        prev_market_value = df.market_value[curr_idx]
+        df.market_value.iat[curr_idx] = price * df.qty_long[curr_idx]
+        df.trade_pnl.iat[curr_idx] = df.market_value[curr_idx] - df.book_value[curr_idx]
 
         # Account.
-        self.curr_equity = self.curr_equity - prev_market_value + df.market_value.iat[curr_idx]
+        self.curr_equity = self.curr_equity - prev_market_value + df.market_value[curr_idx]
         self.curr_account_pnl = self.curr_equity - INITIAL_CAPITAL
 
         # Account columns.
