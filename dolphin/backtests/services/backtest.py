@@ -830,22 +830,36 @@ class BacktestService(object):
         #--------------------------------------------------------------------------
         length = len(df)
 
+        df['trade_id'] = np.nan
+        df['cnt_long'] = np.nan
+        df['qty_long'] = np.nan
+        df['stop_loss'] = np.nan
+        df['last_fill'] = np.nan
+        df['avg_price'] = np.nan
+        df['cashflow'] = np.nan
+        df['book_value'] = np.nan
+        df['market_value'] = np.nan
+        df['trade_pnl'] = np.nan
+        df['cash'] = np.nan
+        df['equity'] = np.nan
+        df['account_pnl'] = np.nan
+
         # Trade specific columns.
-        trade_id = np.full(length, np.nan)
-        cnt_long = np.full(length, np.nan)
-        qty_long = np.full(length, np.nan)
-        stop_loss = np.full(length, np.nan)
-        last_fill = np.full(length, np.nan)
-        avg_price = np.full(length, np.nan)
-        cashflow = np.full(length, np.nan)
-        book_value = np.full(length, np.nan)
-        market_value = np.full(length, np.nan)
-        trade_pnl = np.full(length, np.nan)
+        trade_id = df.trade_id
+        cnt_long = df.cnt_long
+        qty_long = df.qty_long
+        stop_loss = df.stop_loss
+        last_fill = df.last_fill
+        avg_price = df.avg_price
+        cashflow = df.cashflow
+        book_value = df.book_value
+        market_value = df.market_value
+        trade_pnl = df.trade_pnl
 
         # Account specific columns.
-        cash = np.full(length, np.nan)
-        equity = np.full(length, np.nan)
-        account_pnl = np.full(length, np.nan)
+        cash = df.cash
+        equity = df.equity
+        account_pnl = df.account_pnl
 
         #--------------------------------------------------------------------------
         # Initialize variables.
@@ -1061,7 +1075,7 @@ class BacktestService(object):
 
                 cnt_long[curr_idx] = 1
                 qty_long[curr_idx] += target_qty_long
-                stop_loss[curr_idx] = curr_price - 2*atr[prev_idx]
+                stop_loss[curr_idx] = algo.calculate_stop_loss(curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df)
                 last_fill[curr_idx] = curr_price
                 avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
 
@@ -1156,8 +1170,44 @@ class BacktestService(object):
             target_qty_long = np.floor(equity_bod * weights[prev_idx] / curr_price)
             delta_qty_long = target_qty_long - qty_long[curr_idx]
 
+            # Sell position.
+            if delta_qty_long < 0:
+
+                if target_qty_long == 0:
+                    # Trade columns.
+                    cashflow[curr_idx] -= curr_price * delta_qty_long
+                    book_value[curr_idx] += curr_price * delta_qty_long
+                    market_value[curr_idx] = 0
+
+                    # Close remaining book value as trade profit and loss.
+                    trade_pnl[curr_idx] = book_value[curr_idx] * -1
+                    book_value[curr_idx] = 0
+
+                    # trade_id[curr_idx]
+                    cnt_long[curr_idx] = 0
+                    qty_long[curr_idx] = 0
+                    stop_loss[curr_idx] = 0
+                    last_fill[curr_idx] = curr_price
+                    avg_price[curr_idx] = 0
+
+                    portfolio_symbol.remove(curr_symbol)
+
+                else:
+                    # Trade columns.
+                    cashflow[curr_idx] -= curr_price * delta_qty_long
+                    book_value[curr_idx] += curr_price * delta_qty_long
+                    market_value[curr_idx] += curr_price * delta_qty_long
+                    trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
+
+                    # trade_id[curr_idx]
+                    # cnt_long[curr_idx]
+                    qty_long[curr_idx] += delta_qty_long
+                    # stop_loss[curr_idx]
+                    last_fill[curr_idx] = curr_price
+                    avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
+
             # Market trend filter.
-            if not market_trend_filter[prev_idx]:
+            if not df.market_trend_filter[prev_idx]:
                 print("[DEBUG]  Market trend down: {} Not buying {}.".format(
                     curr_date,
                     curr_symbol,
@@ -1179,43 +1229,6 @@ class BacktestService(object):
                 # stop_loss[curr_idx]
                 last_fill[curr_idx] = curr_price
                 avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
-
-            if delta_qty_long < 0:
-
-                # Sell position.
-                if target_qty_long == 0:
-                    # Trade columns.
-                    cashflow[curr_idx] -= curr_price * delta_qty_long
-                    book_value[curr_idx] += curr_price * delta_qty_long
-                    market_value[curr_idx] = 0
-
-                    # Close remaining book value as trade profit and loss.
-                    trade_pnl[curr_idx] = book_value[curr_idx] * -1
-                    book_value[curr_idx] = 0
-
-                    # trade_id[curr_idx]
-                    cnt_long[curr_idx] = 0
-                    qty_long[curr_idx] = 0
-                    stop_loss[curr_idx] = 0
-                    last_fill[curr_idx] = curr_price
-                    avg_price[curr_idx] = 0
-
-                    portfolio_symbol.remove(curr_symbol)
-
-                # Remove from position.
-                else:
-                    # Trade columns.
-                    cashflow[curr_idx] -= curr_price * delta_qty_long
-                    book_value[curr_idx] += curr_price * delta_qty_long
-                    market_value[curr_idx] += curr_price * delta_qty_long
-                    trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
-
-                    # trade_id[curr_idx]
-                    # cnt_long[curr_idx]
-                    qty_long[curr_idx] += delta_qty_long
-                    # stop_loss[curr_idx]
-                    last_fill[curr_idx] = curr_price
-                    avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
 
             # Account.
             curr_cash += cashflow[curr_idx]
@@ -1361,23 +1374,6 @@ class BacktestService(object):
                 #------------------------------------------------------------------
                 if is_trading_day(curr_date, prev_trading_date):
                     prev_trading_date = curr_date
-
-        #--------------------------------------------------------------------------
-        # Append trading data to dataframe.
-        #--------------------------------------------------------------------------
-        df['trade_id'] = trade_id
-        df['cnt_long'] = cnt_long
-        df['qty_long'] = qty_long
-        df['stop_loss'] = stop_loss
-        df['last_fill'] = last_fill
-        df['avg_price'] = avg_price
-        df['cashflow'] = cashflow
-        df['book_value'] = book_value
-        df['market_value'] = market_value
-        df['trade_pnl'] = trade_pnl
-        df['cash'] = cash
-        df['equity'] = equity
-        df['account_pnl'] = account_pnl
 
         return df
 

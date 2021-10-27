@@ -270,40 +270,48 @@ class SystematicMomentum(Algo):
 
     def sell_signal(self, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
 
-            curr_idx = symbol_curr_idx[curr_symbol]
-            prev_idx = symbol_prev_idx[curr_symbol]
+        curr_idx = symbol_curr_idx[curr_symbol]
+        prev_idx = symbol_prev_idx[curr_symbol]
 
-            if df.cnt_long[curr_idx] == 0:
-                return False
-
-            # Turtle exit and stop loss.
-            if False:
-            # if curr_price <= df.close_exit_rolling_min[prev_idx]:
-                return True
-            if False:
-            # if curr_price <= df.stop_loss[prev_idx]:
-                return True
-
-            # Minimum momentum.
-            if df.momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
-                return True
-
-            # Penny stock.
-            if curr_price < PENNY_PRICE:
-                return True
-
-            # Expensive stock.
-            if curr_price > EXPENSIVE_PRICE:
-                return True
-
-            # Not rank.
-            if np.isnan(df['rank'][prev_idx]) or df['rank'][prev_idx] > PORTFOLIO_NUM_STOCK:
-                return True
-
-            # Volatile.
-            # TODO.
-
+        if df.cnt_long[curr_idx] == 0:
             return False
+
+        # Turtle exit and stop loss.
+        if False:
+        # if curr_price <= df.close_exit_rolling_min[prev_idx]:
+            return True
+        if False:
+        # if curr_price <= df.stop_loss[prev_idx]:
+            return True
+
+        # Minimum momentum.
+        if df.momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
+            return True
+
+        # Penny stock.
+        if curr_price < PENNY_PRICE:
+            return True
+
+        # Expensive stock.
+        if curr_price > EXPENSIVE_PRICE:
+            return True
+
+        # Not rank.
+        if np.isnan(df['rank'][prev_idx]) or df['rank'][prev_idx] > PORTFOLIO_NUM_STOCK:
+            return True
+
+        # Volatile.
+        # TODO.
+
+        return False
+
+
+    def calculate_stop_loss(self, curr_symbol, curr_price, symbol_curr_idx, symbol_prev_idx, df):
+
+        curr_idx = symbol_curr_idx[curr_symbol]
+        prev_idx = symbol_prev_idx[curr_symbol]
+
+        return curr_price - 2*df.atr[prev_idx]
 
 
     def get_trade_frequency(self):
