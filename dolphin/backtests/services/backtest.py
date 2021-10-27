@@ -1170,6 +1170,30 @@ class BacktestService(object):
             target_qty_long = np.floor(equity_bod * weights[prev_idx] / curr_price)
             delta_qty_long = target_qty_long - qty_long[curr_idx]
 
+            # Market trend filter.
+            if not df.market_trend_filter[prev_idx]:
+                print("[DEBUG]  Market trend down: {} Not buying {}.".format(
+                    curr_date,
+                    curr_symbol,
+                ))
+                return curr_cash, curr_equity, curr_account_pnl
+
+            # Add to position.
+            if delta_qty_long > 0:
+
+                # Trade columns.
+                cashflow[curr_idx] -= curr_price * delta_qty_long
+                book_value[curr_idx] += curr_price * delta_qty_long
+                market_value[curr_idx] += curr_price * delta_qty_long
+                trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
+
+                # trade_id[curr_idx]
+                # cnt_long[curr_idx]
+                qty_long[curr_idx] += delta_qty_long
+                # stop_loss[curr_idx]
+                last_fill[curr_idx] = curr_price
+                avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
+
             # Sell position.
             if delta_qty_long < 0:
 
@@ -1205,30 +1229,6 @@ class BacktestService(object):
                     # stop_loss[curr_idx]
                     last_fill[curr_idx] = curr_price
                     avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
-
-            # Market trend filter.
-            if not df.market_trend_filter[prev_idx]:
-                print("[DEBUG]  Market trend down: {} Not buying {}.".format(
-                    curr_date,
-                    curr_symbol,
-                ))
-                return curr_cash, curr_equity, curr_account_pnl
-
-            # Add to position.
-            if delta_qty_long > 0:
-
-                # Trade columns.
-                cashflow[curr_idx] -= curr_price * delta_qty_long
-                book_value[curr_idx] += curr_price * delta_qty_long
-                market_value[curr_idx] += curr_price * delta_qty_long
-                trade_pnl[curr_idx] = market_value[curr_idx] - book_value[curr_idx]
-
-                # trade_id[curr_idx]
-                # cnt_long[curr_idx]
-                qty_long[curr_idx] += delta_qty_long
-                # stop_loss[curr_idx]
-                last_fill[curr_idx] = curr_price
-                avg_price[curr_idx] = book_value[curr_idx] / qty_long[curr_idx]
 
             # Account.
             curr_cash += cashflow[curr_idx]
