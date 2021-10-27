@@ -362,16 +362,17 @@ class BacktestService(object):
             elif target_qty_long > 0:
 
                 # Initialize columns in case they are empty.
-                cashflow[curr_idx] = 0 if np.isnan(cashflow[curr_idx]) else cashflow[curr_idx]
-                book_value[curr_idx] = 0 if np.isnan(book_value[curr_idx]) else book_value[curr_idx]
-                market_value[curr_idx] = 0 if np.isnan(market_value[curr_idx]) else market_value[curr_idx]
-                trade_pnl[curr_idx] = 0 if np.isnan(trade_pnl[curr_idx]) else trade_pnl[curr_idx]
-                trade_id[curr_idx] = new_trade_id() if np.isnan(trade_id[curr_idx]) else trade_id[curr_idx]
-                cnt_long[curr_idx] = 0 if np.isnan(cnt_long[curr_idx]) else cnt_long[curr_idx]
-                qty_long[curr_idx] = 0 if np.isnan(qty_long[curr_idx]) else qty_long[curr_idx]
-                stop_loss[curr_idx] = 0 if np.isnan(stop_loss[curr_idx]) else stop_loss[curr_idx]
-                last_fill[curr_idx] = 0 if np.isnan(last_fill[curr_idx]) else last_fill[curr_idx]
-                avg_price[curr_idx] = 0 if np.isnan(avg_price[curr_idx]) else avg_price[curr_idx]
+                if np.isnan(trade_id[curr_idx]):
+                    cashflow[curr_idx] = 0
+                    book_value[curr_idx] = 0
+                    market_value[curr_idx] = 0
+                    trade_pnl[curr_idx] = 0
+                    trade_id[curr_idx] = new_trade_id()
+                    cnt_long[curr_idx] = 0
+                    qty_long[curr_idx] = 0
+                    stop_loss[curr_idx] = 0
+                    last_fill[curr_idx] = 0
+                    avg_price[curr_idx] = 0
 
                 # Account.
                 curr_cash -= curr_price * target_qty_long
