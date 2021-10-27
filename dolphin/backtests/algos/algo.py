@@ -126,23 +126,3 @@ class Algo:
         df_symbol_universe.to_csv("{}/algo_indicators.csv".format(CSV_ROOT_PATH), index=False)
 
         return df_symbol_universe
-
-
-    def prepare_for_backtest(self, df_symbol_list, df_market):
-
-        df_market = self.generate_market_indicators(df_market)
-        df_symbol_list = self.append_market_indicators_to_symbol(df_symbol_list, df_market)
-        df_symbol_universe = self.generate_all_symbol_indicators(df_symbol_list)
-        df_symbol_universe = self.rank_symbols(df_symbol_universe)
-        df_symbol_universe = self.calculate_symbol_weights(df_symbol_universe)
-
-        df_symbol_universe.sort_values(by=["date", "symbol"], inplace=True)
-        df_symbol_universe.reset_index(inplace=True)
-
-        return df_symbol_universe
-
-
-
-
-
-

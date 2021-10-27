@@ -183,7 +183,6 @@ class BacktestService(object):
         #--------------------------------------------------------------------------
         symbol_prev_idx = {}
         symbol_curr_idx = {}
-
         portfolio_symbol = []
         curr_watchlist = []
         prev_watchlist = []
@@ -684,13 +683,27 @@ class BacktestService(object):
 
         return df
 
+
+    def prepare_data_for_backtest(self, algo, df_symbol_list, df_market):
+
+        df_market = algo.generate_market_indicators(df_market)
+        df_symbol_list = algo.append_market_indicators_to_symbol(df_symbol_list, df_market)
+        df_symbol_universe = algo.generate_all_symbol_indicators(df_symbol_list)
+        df_symbol_universe = algo.rank_symbols(df_symbol_universe)
+        df_symbol_universe = algo.calculate_symbol_weights(df_symbol_universe)
+
+        df_symbol_universe.sort_values(by=["date", "symbol"], inplace=True)
+        df_symbol_universe.reset_index(inplace=True)
+
+        return df_symbol_universe
+
     
     def backtest_algo(self, algo_type, start_date_str=None, end_date_str=None):
         
         algo = algo_type()
         df_symbol_list = self.load_symbol_universe_data_from_db(algo.symbol_universe, start_date_str, end_date_str)
         df_market = self.load_market_benchmark_data_from_db(algo.market_benchmark, start_date_str, end_date_str)
-        df = algo.prepare_for_backtest(df_symbol_list, df_market)
+        df = self.prepare_data_for_backtest(algo, df_symbol_list, df_market)
 
         start_date = pd.to_datetime(start_date_str)
         end_date = pd.to_datetime(end_date_str)
