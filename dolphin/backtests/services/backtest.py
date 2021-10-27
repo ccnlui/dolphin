@@ -11,11 +11,6 @@ from backtests.services.market_data import (
 )
 from backtests.constants import cboe_holidays
 
-from numba import jit
-from numba.typed import Dict
-from numba.typed import List
-from numba.core import types
-
 import pandas as pd
 import numpy as np
 from plotly.subplots import make_subplots
@@ -25,13 +20,10 @@ from datetime import datetime, date, time, timedelta
 from dateutil.relativedelta import relativedelta
 
 from collections import namedtuple
-import code
-import os
 
 import empyrical as em
 import pyfolio.timeseries as pt
 
-import csv
 import bisect
 
 from backtests.constants import (
