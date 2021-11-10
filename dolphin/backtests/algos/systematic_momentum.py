@@ -253,7 +253,7 @@ class SystematicMomentum(Algo):
             return False
 
         # Minimum momentum.
-        if df.momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
+        if df.momentum_score[prev_idx] < MIN_MOMENTUM_SCORE:
             return False
 
         # Low ranking.
@@ -285,7 +285,7 @@ class SystematicMomentum(Algo):
             return True
 
         # Minimum momentum.
-        if df.momentum_score[curr_idx] < MIN_MOMENTUM_SCORE:
+        if df.momentum_score[prev_idx] < MIN_MOMENTUM_SCORE:
             return True
 
         # Penny stock.
