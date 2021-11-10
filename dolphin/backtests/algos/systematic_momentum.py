@@ -212,8 +212,8 @@ class SystematicMomentum(Algo):
     #--------------------------------------------------------------------------
     # Class fields for base Algo class.
     #--------------------------------------------------------------------------
-    # symbol_universe = get_sp500_symbols_list()
-    symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
+    symbol_universe = get_sp500_symbols_list()
+    # symbol_universe = ["AAPL", "FB", "AMZN", "GOOGL", "TSLA"]
     market_benchmark = 'SPY'
     symbol_indicator_list = [
         generate_price_pct_change_std_and_inv_std,
@@ -239,10 +239,10 @@ class SystematicMomentum(Algo):
 
         # Market trend filter.
         if not df.market_trend_filter[prev_idx]:
-            print("[DEBUG]  Market trend down: {} Not buying {}.".format(
-                df.date[curr_idx],
-                curr_symbol,
-            ))
+            # print("[DEBUG]  Market trend down: {} Not buying {}.".format(
+            #     df.date[curr_idx],
+            #     curr_symbol,
+            # ))
             return False
 
         if df.cnt_long[curr_idx] > 0:
