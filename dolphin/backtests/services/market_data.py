@@ -15,7 +15,7 @@ from datetime import datetime, date, time, timedelta
 # Constants.
 #------------------------------------------------------------------------------
 SYMBOL_UNIVERSE_PATH = "/home/calvin/source/data/alpha_vantage/backup/2021-01-16/data"
-CREDENTIALS_FULLPATH = "/media/calvin/Backup Plus/backup/source/credentials/credentials.ini"
+CREDENTIALS_FULLPATH = "/media/calvin/Backup Plus/backup/sandisk-extreme/source/credentials/credentials.ini"
 
 #------------------------------------------------------------------------------
 # Functions.

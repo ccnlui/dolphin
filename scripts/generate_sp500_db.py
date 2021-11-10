@@ -13,7 +13,7 @@ from mysql.connector import connect, Error
 #------------------------------------------------------------------------------
 # Constants.
 #------------------------------------------------------------------------------
-CREDENTIALS_FULLPATH  = "/media/calvin/Backup Plus/backup/source/credentials/credentials.ini"
+CREDENTIALS_FULLPATH  = "/media/calvin/Backup Plus/backup/sandisk-extreme/source/credentials/credentials.ini"
 SP500_DATA_PATH       = "/home/calvin/source/data/sp500"
 SP500_DATA_FILENAME   = "sp500_2021-10-18.csv"
 
